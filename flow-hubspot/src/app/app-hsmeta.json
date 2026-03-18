@@ -1,0 +1,36 @@
+{
+  "uid": "flow_app",
+  "type": "app",
+  "config": {
+    "description": "An example to demonstrate how to build a private oauth app with developer projects.",
+    "name": "flow-Application",
+    "distribution": "private",
+    "auth": {
+      "type": "oauth",
+      "redirectUrls": ["http://localhost:8000/api/hubspot/callback"],
+      "requiredScopes": [
+        "crm.objects.contacts.read",
+        "crm.objects.contacts.write",
+        "crm.objects.companies.read",
+        "crm.objects.companies.write",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write",
+        "oauth"
+      ],
+
+      "optionalScopes": [],
+      "conditionallyRequiredScopes": []
+    },
+    "permittedUrls": {
+      "fetch": ["https://api.hubapi.com"],
+      "iframe": [],
+      "img": []
+    },
+    "support": {
+      "supportEmail": "support@example.com",
+      "documentationUrl": "https://example.com/docs",
+      "supportUrl": "https://example.com/support",
+      "supportPhone": "+5511918343312"
+    }
+  }
+}

@@ -1,0 +1,192 @@
+Visão Geral do Projeto
+
+Este projeto implementa uma integração completa entre uma aplicação própria e o HubSpot, utilizando OAuth 2.0, com backend em Laravel 11 e frontend em Vue 3 (SPA).
+O objetivo é conectar uma conta HubSpot, gerenciar tokens de acesso e sincronizar dados, como contatos e negócios, de forma segura e escalável.
+
+🧱 Tecnologias Utilizadas e Papéis
+🔹 Laravel 11 (Backend)
+
+O que faz no projeto:
+
+Atua como API principal
+
+Centraliza regras de negócio
+
+Gerencia autenticação OAuth com o HubSpot
+
+Persiste tokens e dados no banco
+
+Expõe endpoints REST consumidos pelo frontend
+
+Principais responsabilidades:
+
+Redirecionar o usuário para o OAuth do HubSpot
+
+Receber o code de autorização
+
+Trocar o code por access_token e refresh_token
+
+Renovar tokens automaticamente quando necessário
+
+Importar contatos e criar negócios via API do HubSpot
+
+🔹 HubSpot API + OAuth 2.0
+
+O que faz no projeto:
+
+Permite autenticação segura do usuário via HubSpot
+
+Autoriza o acesso da aplicação aos dados da conta HubSpot
+
+Fornece tokens temporários (access + refresh)
+
+Escopos utilizados:
+
+Leitura e escrita de contatos
+
+Leitura e escrita de negócios (deals)
+
+Informações básicas da conta
+
+Benefício:
+
+Integração segura
+
+Sem compartilhar login/senha
+
+Total controle de permissões
+
+🔹 Service Layer (HubspotService)
+
+O que faz no projeto:
+
+Encapsula toda a comunicação com a API do HubSpot
+
+Centraliza:
+
+requisições HTTP
+
+controle de token
+
+renovação automática
+
+formatação de dados
+
+Por que é importante:
+
+Controllers ficam limpos
+
+Código reutilizável
+
+Facilita testes
+
+Facilita manutenção
+
+🔹 Banco de Dados (MySQL)
+
+O que faz no projeto:
+
+Armazena tokens OAuth (access_token, refresh_token, expires_at)
+
+Persiste contatos importados do HubSpot
+
+Garante que a integração continue ativa entre sessões
+
+Resultado:
+
+O usuário não precisa se reconectar toda vez
+
+O sistema sabe se o HubSpot já está conectado
+
+🔹 Vue 3 + Vite (Frontend SPA)
+
+O que faz no projeto:
+
+Interface do usuário
+
+Experiência fluida sem reload de página
+
+Consome a API Laravel via Axios
+
+Controla estados como:
+
+carregando
+
+conectado
+
+erro
+
+importando dados
+
+Características:
+
+SPA (Single Page Application)
+
+Componentização
+
+Estado reativo
+
+Feedback visual em tempo real
+
+🔹 Axios
+
+O que faz no projeto:
+
+Comunicação HTTP entre frontend e backend
+
+Centraliza a baseURL da API
+
+Facilita interceptadores (ex: auth, erros)
+
+🔹 OAuth Flow (Fluxo de Autenticação)
+
+Fluxo implementado:
+
+Usuário clica em Conectar HubSpot
+
+Frontend redireciona para o backend
+
+Backend redireciona para o HubSpot
+
+Usuário autoriza o aplicativo
+
+HubSpot retorna para o backend com code
+
+Backend troca code por tokens
+
+Tokens são salvos no banco
+
+Frontend verifica status da conexão
+
+Interface muda automaticamente para “Conectado”
+
+✅ O Que Já Foi Implementado (Até Agora)
+
+✔ Integração OAuth 2.0 completa com HubSpot
+✔ Backend Laravel estruturado (Controller + Service)
+✔ Persistência segura de tokens
+✔ Endpoint de status da conexão (/hubspot/status)
+✔ Importação de contatos do HubSpot
+✔ SPA em Vue 3
+✔ Interface profissional e responsiva
+✔ Feedback visual de estados (loading, erro, sucesso)
+✔ Redirecionamento correto pós-autorização
+✔ UX clara (conectar → conectado → importar)
+
+🎯 O Que Esse Projeto Demonstra
+
+Este projeto mostra que você sabe:
+
+Trabalhar com integrações externas reais
+
+Implementar OAuth de forma correta
+
+Separar responsabilidades (Controller / Service)
+
+Criar SPAs modernas
+
+Pensar em UX e estado da aplicação
+
+Desenvolver código manutenível e escalável
+
+👉 Isso não é projeto tutorial, é projeto de nível profissional.

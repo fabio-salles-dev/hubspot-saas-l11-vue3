@@ -1,0 +1,12 @@
+[90m= [39m[
+    "[34mportal_id[39m" => [35m123456[39m,
+    "[34mcompany_name[39m" => "[32mMinha Empresa[39m",
+    "[34mregion[39m" => "[32mna1[39m",
+    "[34mtimezone[39m" => "[32mAmerica/Sao_Paulo[39m",
+    "[34mobjects[39m" => [
+      "[34mcontacts[39m" => [35m10[39m,
+      "[34mcompanies[39m" => [35m5[39m,
+      "[34mdeals[39m" => [35m3[39m,
+    ],
+  ]
+

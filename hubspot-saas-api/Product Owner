@@ -1,0 +1,134 @@
+Visão do Produto (como PO)
+
+Estamos construindo um módulo de integração HubSpot que poderia existir em:
+
+um CRM próprio
+
+um sistema de contratos
+
+um SaaS B2B
+
+um ERP leve
+
+Critérios de sucesso:
+
+Integração segura
+
+UX clara
+
+Controle total da conexão
+
+Base preparada para escalar (multi-tenant depois)
+
+📍 Sprint Atual — Sprint 1: Integração Completa
+🎯 Objetivo da Sprint
+
+“Usuário consegue conectar, verificar status, importar dados e desconectar o HubSpot com clareza e controle.”
+
+📌 Backlog Prioritário (ordem de execução)
+🥇 P1 — Desconectar HubSpot (Obrigatório)
+
+Por quê?
+
+Fecha o ciclo OAuth
+
+Permite reset de integração
+
+Exigência básica de qualquer produto real
+
+Critérios de aceite:
+
+Botão “Desconectar”
+
+Remove token do banco
+
+UI volta para estado “não conectado”
+
+Sem precisar reload manual
+
+🥈 P2 — Status Rico da Integração
+
+Hoje:
+{ connected: true }
+
+Queremos:
+
+{
+  "connected": true,
+  "expires_at": "2026-01-15T21:20:19",
+  "needs_refresh": false
+}
+
+
+Critérios de aceite:
+
+Backend calcula validade
+
+Frontend mostra info sutil
+
+Preparado para token refresh
+
+🥉 P3 — Feedback UX Pós-Ações
+
+Toast ao conectar
+
+Toast ao desconectar
+
+Toast ao importar
+
+📌 Usuário sempre sabe o que aconteceu
+
+🚀 Agora: Início da Sprint
+🔨 Tarefa 1 (AGORA): Desconectar HubSpot
+Backend
+
+Nova rota
+
+Novo método no service
+
+Teste manual simples
+
+Frontend
+
+Botão visível somente quando conectado
+
+Confirmação antes de remover
+
+Atualiza estado local
+
+📐 Decisão de Produto (já tomada)
+
+❌ Não vamos redirecionar para o HubSpot ao desconectar
+
+✅ Apenas removemos tokens e resetamos UI
+
+Isso mantém UX rápida e limpa.
+
+
+#####################################################################
+
+Sprint 1 — CONCLUÍDA
+
+Status: DONE ✔️
+Resultado: Integração controlável e profissional
+
+O que foi validado:
+
+✔ hubspot_tokens cria ao conectar
+
+✔ hubspot_tokens destrói ao desconectar
+
+✔ UI reflete estado corretamente
+
+✔ Fluxo OAuth fechado (connect ↔ disconnect)
+
+✔ MVP robusto e limpo
+
+Isso já coloca o projeto acima da média.
+
+
+
+################################################
+
+
+Sprint (Sprint 2
