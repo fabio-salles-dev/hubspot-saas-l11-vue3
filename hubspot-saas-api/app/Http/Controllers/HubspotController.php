@@ -47,6 +47,7 @@ class HubspotController extends Controller
     }
 
     // 📊 Status
+<<<<<<< HEAD
     public function status()
     {
         return response()->json([
@@ -55,6 +56,21 @@ class HubspotController extends Controller
         ]);
     }
 
+=======
+    // No HubspotController.php
+    public function status()
+    {
+        $info = $this->hubspot->getAccountOverview(); // Pega os dados REAIS da API
+
+        return response()->json([
+            'connected' => $this->hubspot->hasValidToken(),
+            'account'   => $info, // Aqui agora vai portal_id, company_name, region e timezone
+        ]);
+    }
+
+
+
+>>>>>>> c5786fb (feat - calling real datas from client)
     // 📥 Importar contatos
     public function importContacts()
     {
@@ -84,6 +100,7 @@ class HubspotController extends Controller
     //     );
     // }
 
+<<<<<<< HEAD
    public function overview()
 {
     $snapshot = HubspotSnapshot::latest('snapshot_date')->first();
@@ -107,6 +124,31 @@ class HubspotController extends Controller
     ]);
 }
 
+=======
+    public function overview()
+    {
+        $snapshot = HubspotSnapshot::latest('snapshot_date')->first();
+
+        if (!$snapshot) {
+            return response()->json([
+                'message' => 'Nenhum snapshot disponível'
+            ], 404);
+        }
+
+        return response()->json([
+            'portal_id' => $snapshot->portal_id,
+            'company_name' => $snapshot->company_name,
+            'region' => $snapshot->region,
+            'timezone' => $snapshot->timezone,
+            'objects' => [
+                'contacts' => $snapshot->contacts,
+                'companies' => $snapshot->companies,
+                'deals' => $snapshot->deals,
+            ]
+        ]);
+    }
+
+>>>>>>> c5786fb (feat - calling real datas from client)
 
 
     // 🔌 Disconnect

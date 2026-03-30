@@ -30,6 +30,7 @@ defineEmits(['connect', 'disconnect'])
         </button>
       </div>
 
+<<<<<<< HEAD
       <div class="account-box">
         <div>
           <span>Conta</span>
@@ -53,6 +54,35 @@ defineEmits(['connect', 'disconnect'])
       </div>
     </div>
   </div>
+=======
+  <div class="account-box">
+  <div>
+    <span>Conta</span>git remote 
+    <strong>{{ account.company_name}}</strong>
+  </div>
+
+  <div>
+    <span>Portal ID</span>
+    <strong>{{ account.portal_id }}</strong>
+  </div>
+
+  <div>
+    <span>Região</span>
+    <!-- O campo da API oficial se chama dataCenterRegion -->
+    <strong>{{ account?.region || overview?.region || '—' }}</strong>
+  </div>
+
+  <div>
+    <span>Timezone</span>
+    <strong>{{ account?.timezone || overview?.timeZone || '—' }}</strong>
+  </div>
+</div>
+
+    </div>
+  </div>
+  <pre>{{ account }}</pre>
+
+>>>>>>> c5786fb (feat - calling real datas from client)
 </template>
 
 <style scoped>

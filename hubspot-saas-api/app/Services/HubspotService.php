@@ -161,10 +161,17 @@ class HubspotService
         $data = json_decode($response->getBody(), true);
 
         return [
+<<<<<<< HEAD
             'portal_id' => $data['portalId'] ?? null,
             'company_name' => $data['companyName'] ?? null,
             'timezone' => $data['timeZone'] ?? null,
             'region' => $data['dataRegion'] ?? null,
+=======
+            'portal_id'    => $data['portalId'] ?? null,
+            'company_name' => $data['accountName'] ?? 'DevNest',
+            'region'       => $data['dataCenterRegion'] ?? 'na1', // <--- Importante: dataCenterRegion
+            'timezone'     => $data['timeZone'] ?? 'America/Sao_Paulo', // <--- Importante: timeZone
+>>>>>>> c5786fb (feat - calling real datas from client)
 
             'objects' => [
                 'contacts'  => $this->countObjects('contacts'),
