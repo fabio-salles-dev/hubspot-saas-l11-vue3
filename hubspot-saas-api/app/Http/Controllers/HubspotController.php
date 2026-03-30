@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\HubspotService;
-use App\Models\Client;
+//use App\Models\Client;
 use App\Models\HubspotSnapshot;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,6 @@ class HubspotController extends Controller
         private HubspotService $hubspot
     ) {}
 
-    // 🔐 Redirect OAuth
     public function redirectToHubspot()
     {
         $state = csrf_token();
@@ -30,7 +29,6 @@ class HubspotController extends Controller
         return redirect("https://app.hubspot.com/oauth/authorize?{$query}");
     }
 
-    // 🔁 Callback OAuth
     public function callback(Request $request)
     {
         if (!$request->code) {
@@ -46,112 +44,35 @@ class HubspotController extends Controller
         return redirect('http://localhost:5173/hubspot?status=success');
     }
 
-    // 📊 Status
-<<<<<<< HEAD
     public function status()
     {
         return response()->json([
             'connected' => $this->hubspot->hasValidToken(),
-            'account'   => $this->hubspot->getAccountInfo(),
+            'account'   => $this->hubspot->getAccountOverview(), // Retorna tudo: portal, nome, região, timezone
         ]);
     }
 
-=======
-    // No HubspotController.php
-    public function status()
-    {
-        $info = $this->hubspot->getAccountOverview(); // Pega os dados REAIS da API
-
-        return response()->json([
-            'connected' => $this->hubspot->hasValidToken(),
-            'account'   => $info, // Aqui agora vai portal_id, company_name, region e timezone
-        ]);
-    }
-
-
-
->>>>>>> c5786fb (feat - calling real datas from client)
-    // 📥 Importar contatos
-    public function importContacts()
-    {
-        $contacts = $this->hubspot->getContacts();
-
-        foreach ($contacts as $contact) {
-            if (!isset($contact['properties']['email'])) {
-                continue;
-            }
-
-            Client::updateOrCreate(
-                ['hubspot_id' => $contact['id']],
-                [
-                    'name'  => $contact['properties']['firstname'] ?? 'Sem nome',
-                    'email' => $contact['properties']['email'],
-                ]
-            );
-        }
-
-        return response()->json(['imported' => count($contacts)]);
-    }
-
-    // public function overview()
-    // {
-    //     return response()->json(
-    //         $this->hubspot->getAccountOverview()
-    //     );
-    // }
-
-<<<<<<< HEAD
-   public function overview()
-{
-    $snapshot = HubspotSnapshot::latest('snapshot_date')->first();
-
-    if (!$snapshot) {
-        return response()->json([
-            'message' => 'Nenhum snapshot disponível'
-        ], 404);
-    }
-
-    return response()->json([
-        'portal_id' => $snapshot->portal_id,
-        'company_name' => $snapshot->company_name,
-        'region' => $snapshot->region,
-        'timezone' => $snapshot->timezone,
-        'objects' => [
-            'contacts' => $snapshot->contacts,
-            'companies' => $snapshot->companies,
-            'deals' => $snapshot->deals,
-        ]
-    ]);
-}
-
-=======
     public function overview()
     {
         $snapshot = HubspotSnapshot::latest('snapshot_date')->first();
 
         if (!$snapshot) {
-            return response()->json([
-                'message' => 'Nenhum snapshot disponível'
-            ], 404);
+            return response()->json(['message' => 'Nenhum snapshot disponível'], 404);
         }
 
         return response()->json([
-            'portal_id' => $snapshot->portal_id,
+            'portal_id'    => $snapshot->portal_id,
             'company_name' => $snapshot->company_name,
-            'region' => $snapshot->region,
-            'timezone' => $snapshot->timezone,
-            'objects' => [
-                'contacts' => $snapshot->contacts,
+            'region'       => $snapshot->region,
+            'timezone'     => $snapshot->timezone,
+            'objects'      => [
+                'contacts'  => $snapshot->contacts,
                 'companies' => $snapshot->companies,
-                'deals' => $snapshot->deals,
+                'deals'     => $snapshot->deals,
             ]
         ]);
     }
 
->>>>>>> c5786fb (feat - calling real datas from client)
-
-
-    // 🔌 Disconnect
     public function disconnect()
     {
         $this->hubspot->disconnect();

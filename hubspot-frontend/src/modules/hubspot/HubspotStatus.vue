@@ -14,7 +14,6 @@ defineEmits(['connect', 'disconnect'])
     <!-- NÃO CONECTADO -->
     <div v-if="!connected" class="status-center">
       <div class="badge warning">⚠️ HubSpot não conectado</div>
-
       <button class="btn primary" @click="$emit('connect')">
         🔐 Conectar HubSpot
       </button>
@@ -24,66 +23,39 @@ defineEmits(['connect', 'disconnect'])
     <div v-else>
       <div class="status-header">
         <div class="badge success">✅ HubSpot conectado</div>
-
         <button class="btn danger small" @click="$emit('disconnect')">
           🔌 Desconectar
         </button>
       </div>
 
-<<<<<<< HEAD
       <div class="account-box">
         <div>
           <span>Conta</span>
-          <strong>{{ overview?.company_name ?? platformName }}</strong>
+          <strong>{{ account?.company_name || platformName || 'DevNest' }}</strong>
         </div>
 
         <div>
           <span>Portal ID</span>
-          <strong>{{ account.portal_id }}</strong>
+          <strong>{{ account?.portal_id }}</strong>
         </div>
 
         <div>
           <span>Região</span>
-          <strong>{{ overview?.region ?? '—' }}</strong>
+          <strong>{{ account?.region || '—' }}</strong>
         </div>
 
         <div>
           <span>Timezone</span>
-          <strong>{{ overview?.timezone ?? '—' }}</strong>
+          <strong>{{ account?.timezone || '—' }}</strong>
         </div>
       </div>
     </div>
   </div>
-=======
-  <div class="account-box">
-  <div>
-    <span>Conta</span>git remote 
-    <strong>{{ account.company_name}}</strong>
-  </div>
-
-  <div>
-    <span>Portal ID</span>
-    <strong>{{ account.portal_id }}</strong>
-  </div>
-
-  <div>
-    <span>Região</span>
-    <!-- O campo da API oficial se chama dataCenterRegion -->
-    <strong>{{ account?.region || overview?.region || '—' }}</strong>
-  </div>
-
-  <div>
-    <span>Timezone</span>
-    <strong>{{ account?.timezone || overview?.timeZone || '—' }}</strong>
-  </div>
-</div>
-
-    </div>
-  </div>
-  <pre>{{ account }}</pre>
-
->>>>>>> c5786fb (feat - calling real datas from client)
+  
+  <!-- Debug para você ver os dados chegando -->
+  <pre v-if="connected" style="font-size: 10px; margin-top: 10px;">{{ account }}</pre>
 </template>
+
 
 <style scoped>
 .status-card {

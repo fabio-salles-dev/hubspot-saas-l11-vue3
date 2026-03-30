@@ -19,6 +19,7 @@ class HubspotService
     }
 
     /* ==========================
+
      |  OAUTH
      ========================== */
 
@@ -50,18 +51,10 @@ class HubspotService
      |  TOKEN
      ========================== */
 
-    // public function hasValidToken(): bool
-    // {
-    //     $token = HubspotToken::first();
-
-    //     return $token && Carbon::parse($token->expires_at)->isFuture();
-    // }
-
     public function hasValidToken(): bool
     {
         return HubspotToken::query()->whereNotNull('access_token')->exists();
     }
-
 
     public function getValidToken(): string
     {
@@ -111,40 +104,26 @@ class HubspotService
 
     public function getAccountInfo(): ?array
     {
-        if (!$this->hasValidToken()) {
-            return null;
-        }
-
-        $response = $this->client->get('account-info/v3/details', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->getValidToken(),
-            ]
-        ]);
-
-        $data = json_decode($response->getBody(), true);
-
-        return [
-            'portal_id'    => $data['portalId'] ?? null,
-            'account_name' => $data['companyName'] ?? null,
-        ];
+        return $this->getAccountOverview();
     }
+
     private function countObjects(string $type): int
     {
-        $response = $this->client->post("crm/v3/objects/{$type}/search", [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->getValidToken(),
-                'Content-Type'  => 'application/json',
-            ],
-            'json' => [
-                'limit' => 1
-            ]
-        ]);
+        try {
+            $response = $this->client->post("crm/v3/objects/{$type}/search", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->getValidToken(),
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => ['limit' => 1]
+            ]);
 
-        $data = json_decode($response->getBody(), true);
-
-        return $data['total'] ?? 0;
+            $data = json_decode($response->getBody(), true);
+            return $data['total'] ?? 0;
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
-
 
     public function getAccountOverview(): ?array
     {
@@ -161,18 +140,10 @@ class HubspotService
         $data = json_decode($response->getBody(), true);
 
         return [
-<<<<<<< HEAD
-            'portal_id' => $data['portalId'] ?? null,
-            'company_name' => $data['companyName'] ?? null,
-            'timezone' => $data['timeZone'] ?? null,
-            'region' => $data['dataRegion'] ?? null,
-=======
             'portal_id'    => $data['portalId'] ?? null,
             'company_name' => $data['accountName'] ?? 'DevNest',
-            'region'       => $data['dataCenterRegion'] ?? 'na1', // <--- Importante: dataCenterRegion
-            'timezone'     => $data['timeZone'] ?? 'America/Sao_Paulo', // <--- Importante: timeZone
->>>>>>> c5786fb (feat - calling real datas from client)
-
+            'region'       => $data['dataCenterRegion'] ?? 'na1',
+            'timezone'     => $data['timeZone'] ?? 'UTC',
             'objects' => [
                 'contacts'  => $this->countObjects('contacts'),
                 'companies' => $this->countObjects('companies'),
@@ -186,13 +157,6 @@ class HubspotService
         $overview = $this->getAccountOverview();
         return $overview['portal_id'] ?? null;
     }
-
-
-
-
-    /* ==========================
-     |  DISCONNECT
-     ========================== */
 
     public function disconnect(): void
     {
