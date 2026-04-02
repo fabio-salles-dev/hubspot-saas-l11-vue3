@@ -3,10 +3,50 @@ defineProps({
   connected: Boolean,
   account: Object,
   overview: Object,
-  platformName: String
-})
+  platformName: String,
+});
 
-defineEmits(['connect', 'disconnect'])
+// 🌎 Detecta idioma do navegador
+const locale = navigator.language || "pt-BR";
+
+// 🌎 Região amigável
+const regionLabel = (region) => {
+  const map = {
+    na1: {
+      "pt-BR": "🌎 América",
+      "en-US": "🌎 North America",
+    },
+    eu1: {
+      "pt-BR": "🇪🇺 Europa",
+      "en-US": "🇪🇺 Europe",
+    },
+    ap1: {
+      "pt-BR": "🌏 Ásia",
+      "en-US": "🌏 Asia",
+    },
+  };
+
+  return map[region]?.[locale] || region || "N/A";
+};
+
+// ⏰ Timezone amigável
+const timezoneLabel = (tz) => {
+  if (!tz) return "—";
+
+  if (tz.includes("Sao_Paulo")) {
+    return locale === "pt-BR"
+      ? "🇧🇷 Brasil (São Paulo)"
+      : "🇧🇷 Brazil (São Paulo)";
+  }
+
+  if (tz.includes("Eastern")) {
+    return locale === "pt-BR" ? "🇺🇸 EUA (Eastern)" : "🇺🇸 USA (Eastern)";
+  }
+
+  return tz;
+};
+
+defineEmits(["connect", "disconnect"]);
 </script>
 
 <template>
@@ -41,39 +81,42 @@ defineEmits(['connect', 'disconnect'])
 
         <div>
           <span>Região</span>
+
           <strong>
-  {{
-    overview?.region === 'na1' ? 'América do Norte' :
-    overview?.region === 'eu1' ? 'Europa' :
-    overview?.region === 'ap1' ? 'Ásia' :
-    overview?.region
-  }}
-</strong>
+            {{ regionLabel(overview?.region) }}
+          </strong>
         </div>
 
         <div>
           <span>Timezone</span>
-          <strong>{{ overview?.timezone ?? '—' }}</strong>
+          <strong>{{ timezoneLabel(overview?.timezone) }}</strong>
         </div>
       </div>
     </div>
-    <a href="https://developers.hubspot.com/docs/api/overview" target="_blank" style="font-size: 12px; color: #64748b; margin-top: 12px; display: inline-block;">
+    <a
+      href="https://developers.hubspot.com/docs/api/overview"
+      target="_blank"
+      style="
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 12px;
+        display: inline-block;
+      "
+    >
       📚 Documentação da API HubSpot
     </a>
-
   </div>
-  
-  <!-- Debug para você ver os dados chegando -->
-  <pre v-if="connected" style="font-size: 10px; margin-top: 10px;">{{ account }}</pre>
-</template>
 
+  <!-- Debug para você ver os dados chegando -->
+  <!-- <pre v-if="connected" style="font-size: 10px; margin-top: 10px;">{{ account }}</pre> -->
+</template>
 
 <style scoped>
 .status-card {
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   margin-bottom: 24px;
 }
 
