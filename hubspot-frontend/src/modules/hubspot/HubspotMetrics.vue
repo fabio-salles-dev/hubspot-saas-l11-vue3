@@ -7,6 +7,10 @@ defineProps({
 </script>
 
 <template>
+  <div class="header" style="margin-bottom: 20px; text-align: center;">
+    <h2>📊 Métricas do HubSpot</h2>
+    <p>Visão geral dos seus contatos, empresas e negócios.</p>
+  </div>
   <div class="metrics">
     <div class="metric-card">
       👥 <strong>{{ contacts }}</strong>

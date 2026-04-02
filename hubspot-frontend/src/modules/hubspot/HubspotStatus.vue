@@ -31,25 +31,36 @@ defineEmits(['connect', 'disconnect'])
       <div class="account-box">
         <div>
           <span>Conta</span>
-          <strong>{{ account?.company_name || platformName || 'DevNest' }}</strong>
+          <strong>{{ overview?.company_name || platformName }}</strong>
         </div>
 
         <div>
           <span>Portal ID</span>
-          <strong>{{ account?.portal_id }}</strong>
+          <strong>{{ overview?.portal_id }}</strong>
         </div>
 
         <div>
           <span>Região</span>
-          <strong>{{ account?.region || '—' }}</strong>
+          <strong>
+  {{
+    overview?.region === 'na1' ? 'América do Norte' :
+    overview?.region === 'eu1' ? 'Europa' :
+    overview?.region === 'ap1' ? 'Ásia' :
+    overview?.region
+  }}
+</strong>
         </div>
 
         <div>
           <span>Timezone</span>
-          <strong>{{ account?.timezone || '—' }}</strong>
+          <strong>{{ overview?.timezone ?? '—' }}</strong>
         </div>
       </div>
     </div>
+    <a href="https://developers.hubspot.com/docs/api/overview" target="_blank" style="font-size: 12px; color: #64748b; margin-top: 12px; display: inline-block;">
+      📚 Documentação da API HubSpot
+    </a>
+
   </div>
   
   <!-- Debug para você ver os dados chegando -->

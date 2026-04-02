@@ -52,7 +52,7 @@ const disconnect = async () => {
 
 // ===== LOADERS (Preservado) =====
 const loadOverview = async () => {
-  const { data } = await api.get('/hubspot/overview')
+  const { data } = await api.get('/hubspot/overview-live')
   overview.value = data
   animatedContacts.value = data.objects.contacts
   animatedCompanies.value = data.objects.companies

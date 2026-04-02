@@ -44,13 +44,12 @@ class HubspotController extends Controller
         return redirect('http://localhost:5173/hubspot?status=success');
     }
 
-    public function status()
-    {
-        return response()->json([
-            'connected' => $this->hubspot->hasValidToken(),
-            'account'   => $this->hubspot->getAccountOverview(), // Retorna tudo: portal, nome, região, timezone
-        ]);
-    }
+ public function status()
+{
+    return response()->json([
+        'connected' => $this->hubspot->hasValidToken(),
+    ]);
+}
 
     public function overview()
     {
@@ -72,6 +71,13 @@ class HubspotController extends Controller
             ]
         ]);
     }
+
+    public function liveOverview()
+{
+    return response()->json(
+        $this->hubspot->getAccountOverview()
+    );
+}
 
     public function disconnect()
     {
