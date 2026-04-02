@@ -1,59 +1,70 @@
 <script setup>
+import i18n from '../../i18n/hubspot' // Importa o arquivo de tradução
+
 defineProps({
   connected: Boolean,
   account: Object,
   overview: Object,
   platformName: String,
-});
+})
 
-// 🌎 Detecta idioma do navegador
-const locale = navigator.language || "pt-BR";
+defineEmits(["connect", "disconnect"])
+
+// 🌎 Detecta idioma (normalizado)
+const locale = navigator.language?.startsWith('pt')
+  ? 'pt-BR'
+  : 'en-US'
+
+// 🌍 Tradução
+const t = (key) => {
+  return i18n[locale]?.[key] || key
+}
 
 // 🌎 Região amigável
 const regionLabel = (region) => {
   const map = {
     na1: {
-      "pt-BR": "🌎 América",
-      "en-US": "🌎 North America",
+      'pt-BR': '🌎 América',
+      'en-US': '🌎 North America',
     },
     eu1: {
-      "pt-BR": "🇪🇺 Europa",
-      "en-US": "🇪🇺 Europe",
+      'pt-BR': '🇪🇺 Europa',
+      'en-US': '🇪🇺 Europe',
     },
     ap1: {
-      "pt-BR": "🌏 Ásia",
-      "en-US": "🌏 Asia",
+      'pt-BR': '🌏 Ásia',
+      'en-US': '🌏 Asia',
     },
-  };
+  }
 
-  return map[region]?.[locale] || region || "N/A";
-};
+  return map[region]?.[locale] || region || 'N/A'
+}
 
 // ⏰ Timezone amigável
 const timezoneLabel = (tz) => {
-  if (!tz) return "—";
+  if (!tz) return '—'
 
-  if (tz.includes("Sao_Paulo")) {
-    return locale === "pt-BR"
-      ? "🇧🇷 Brasil (São Paulo)"
-      : "🇧🇷 Brazil (São Paulo)";
+  if (tz.includes('Sao_Paulo')) {
+    return locale === 'pt-BR'
+      ? '🇧🇷 Brasil (São Paulo)'
+      : '🇧🇷 Brazil (São Paulo)'
   }
 
-  if (tz.includes("Eastern")) {
-    return locale === "pt-BR" ? "🇺🇸 EUA (Eastern)" : "🇺🇸 USA (Eastern)";
+  if (tz.includes('Eastern')) {
+    return locale === 'pt-BR'
+      ? '🇺🇸 EUA (Eastern)'
+      : '🇺🇸 USA (Eastern)'
   }
 
-  return tz;
-};
-
-defineEmits(["connect", "disconnect"]);
+  return tz
+}
 </script>
 
 <template>
   <div class="status-card">
     <!-- NÃO CONECTADO -->
     <div v-if="!connected" class="status-center">
-      <div class="badge warning">⚠️ HubSpot não conectado</div>
+      <div class="badge success">✅ {{ t('connected') }}</div>
       <button class="btn primary" @click="$emit('connect')">
         🔐 Conectar HubSpot
       </button>
