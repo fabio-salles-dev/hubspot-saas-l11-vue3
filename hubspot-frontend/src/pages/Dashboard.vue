@@ -5,7 +5,7 @@ import api from "../services/api";
 import HubspotStatus from "../modules/hubspot/HubspotStatus.vue";
 import HubspotMetrics from "../modules/hubspot/HubspotMetrics.vue";
 import HubspotCharts from "../modules/hubspot/HubspotCharts.vue";
-
+import DealsKanban from "../modules/deals/DealsKanban.vue";
 import DealsCards from "../modules/deals/DealsCard.vue";
 import DealsTable from "../modules/deals/DealsTable.vue";
 
@@ -175,7 +175,7 @@ onMounted(() => {
             <p>Acompanhamento de pipeline em tempo real</p>
           </div>
 
-          <DealsCards :deals="deals" />
+          <DealsKanban :deals="deals" @updated="loadDeals" />
 
           <div class="shadow-sm table-container">
             <DealsTable :deals="deals" />
