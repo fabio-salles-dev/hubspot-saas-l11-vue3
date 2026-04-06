@@ -8,5 +8,4 @@ import HubspotView from './views/HubspotView.vue';
   <RouterView />
 </template>
 
-hubspotView.vue
 
