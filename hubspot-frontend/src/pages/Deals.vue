@@ -16,7 +16,7 @@ const selectedDeal = ref(null)
 
 const loadDeals = async (page = 1) => {
     loading.value = true
-    const { data } = await api.get('/deals', {
+    const { data } = await api.get('/hubspot/deals', {
         params: { ...filters.value, page }
     })
 

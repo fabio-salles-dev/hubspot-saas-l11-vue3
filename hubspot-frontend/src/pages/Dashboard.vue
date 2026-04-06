@@ -116,6 +116,13 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+onMounted(() => {
+  window.addEventListener("refresh-dashboard", async () => {
+    await loadOverview();
+    await loadHistory();
+  });
+});
 </script>
 
 <template>

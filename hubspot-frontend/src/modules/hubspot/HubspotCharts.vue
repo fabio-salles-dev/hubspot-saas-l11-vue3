@@ -15,10 +15,20 @@ const historyCanvas = ref(null);
 let metricsChart = null;
 let historyChart = null;
 
-// Renderização do Gráfico de Rosca (Overview)
+// ================== GROWTH ==================
+const calculateGrowthData = (arr) => {
+  if (!arr || arr.length < 2) return arr || [0];
+
+  return arr.map((value, index) => {
+    if (index === 0) return 0;
+    return value - arr[index - 1];
+  });
+};
+
+// ================== METRICS ==================
 const renderMetrics = async () => {
   if (!props.overview?.objects || !metricsCanvas.value) return;
-  
+
   await nextTick();
   metricsChart?.destroy();
 
@@ -26,93 +36,123 @@ const renderMetrics = async () => {
     type: "doughnut",
     data: {
       labels: ["Contatos", "Empresas", "Negócios"],
-      datasets: [{
-        data: [
-          props.overview.objects.contacts || 0,
-          props.overview.objects.companies || 0,
-          props.overview.objects.deals || 0,
-        ],
-        backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
-        borderWidth: 0,
-      }],
+      datasets: [
+        {
+          data: [
+            props.overview.objects.contacts || 0,
+            props.overview.objects.companies || 0,
+            props.overview.objects.deals || 0,
+          ],
+          backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
+          borderWidth: 0,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom' }
-      }
+        legend: { position: "bottom" },
+      },
     },
   });
 };
 
-// Renderização do Gráfico de Linha (Histórico)
+// ================== HISTORY ==================
 const renderHistory = async () => {
   if (!historyCanvas.value) return;
-  
+
   await nextTick();
   historyChart?.destroy();
 
-  // Só cria o gráfico se houver dados
-  if (props.history?.length > 0) {
-    historyChart = new Chart(historyCanvas.value, {
-      type: "line",
-      data: {
-        labels: props.history.map((h) => h.snapshot_date),
-        datasets: [
-          { 
-            label: "Contatos", 
-            data: props.history.map((h) => h.contacts), 
-            borderColor: "#3b82f6", 
-            tension: 0.3,
-            fill: false 
-          },
-          { 
-            label: "Empresas", 
-            data: props.history.map((h) => h.companies), 
-            borderColor: "#10b981", 
-            tension: 0.3,
-            fill: false 
-          },
-          { 
-            label: "Negócios", 
-            data: props.history.map((h) => h.deals), 
-            borderColor: "#f59e0b", 
-            tension: 0.3, 
-            fill: false 
-          },
-        ],
+  const hasData = props.history?.length > 0;
+
+  const labels = hasData
+    ? props.history.map((h) =>
+        new Date(h.snapshot_date).toLocaleDateString("pt-BR")
+      )
+    : ["Sem dados"];
+
+  const contacts = hasData ? props.history.map((h) => h.contacts) : [0];
+  const companies = hasData ? props.history.map((h) => h.companies) : [0];
+  const deals = hasData ? props.history.map((h) => h.deals) : [0];
+
+  const contactsGrowth = calculateGrowthData(contacts);
+  const companiesGrowth = calculateGrowthData(companies);
+  const dealsGrowth = calculateGrowthData(deals);
+
+  historyChart = new Chart(historyCanvas.value, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Contatos (crescimento)",
+          data: contactsGrowth,
+          tension: 0.4,
+          borderWidth: 2,
+        },
+        {
+          label: "Empresas (crescimento)",
+          data: companiesGrowth,
+          tension: 0.4,
+          borderWidth: 2,
+        },
+        {
+          label: "Negócios (crescimento)",
+          data: dealsGrowth,
+          tension: 0.4,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true }
-        }
+      plugins: {
+        legend: { position: "top" },
       },
-    });
-  }
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 },
+        },
+      },
+    },
+  });
 };
 
-// Observar mudanças nos dados
+// ================== WATCH ==================
 watch(() => props.overview, renderMetrics, { deep: true });
 watch(() => props.history, renderHistory, { deep: true });
+
+// ================== AUTO REFRESH ==================
+let interval = null;
 
 onMounted(() => {
   renderMetrics();
   renderHistory();
+
+  interval = setInterval(() => {
+    window.dispatchEvent(new Event("refresh-dashboard"));
+  }, 15000); // 15 segundos
 });
 
-// Importante: evita vazamento de memória
 onBeforeUnmount(() => {
   metricsChart?.destroy();
   historyChart?.destroy();
+  clearInterval(interval);
 });
 </script>
 
 <template>
   <div class="charts-container">
-    <!-- Card Visão Geral -->
+
+    <!-- MÉTRICAS -->
     <div class="chart-card">
       <h3>Visão Geral</h3>
       <div class="chart-wrapper">
@@ -120,19 +160,21 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Card Histórico -->
+    <!-- HISTÓRICO -->
     <div class="chart-card">
       <h3>Histórico (Últimos 30 dias)</h3>
+
       <div class="chart-wrapper">
-        <!-- O canvas precisa estar no DOM mesmo sem dados para o ref funcionar -->
-        <canvas v-show="history?.length" ref="historyCanvas"></canvas>
-        
-        <!-- Overlay de estado vazio -->
+        <!-- Canvas SEMPRE existe -->
+        <canvas ref="historyCanvas"></canvas>
+
+        <!-- Overlay se vazio -->
         <div v-if="!history?.length" class="empty-overlay">
           <p>📭 Sem histórico disponível</p>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -145,7 +187,7 @@ onBeforeUnmount(() => {
 }
 
 .chart-card {
-  flex: 1 1 400px; /* Cresce e diminui conforme a tela */
+  flex: 1 1 48%;
   min-height: 380px;
   background: #ffffff;
   border-radius: 12px;
@@ -159,13 +201,11 @@ onBeforeUnmount(() => {
   margin-bottom: 20px;
   font-size: 1.1rem;
   color: #333;
-  font-family: sans-serif;
 }
 
 .chart-wrapper {
   flex: 1;
-  position: relative; /* OBRIGATÓRIO para Chart.js responsivo */
-  width: 100%;
+  position: relative;
 }
 
 .empty-overlay {
@@ -178,6 +218,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   border: 1px dashed #ddd;
   color: #888;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
