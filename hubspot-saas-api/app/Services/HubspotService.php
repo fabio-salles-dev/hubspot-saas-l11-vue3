@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\HubspotToken;
 use GuzzleHttp\Client;
 use Carbon\Carbon;
+use App\Models\HubspotSnapshot;
 
 class HubspotService
 {
@@ -125,6 +126,7 @@ class HubspotService
         }
     }
 
+
     public function getAccountOverview(): ?array
     {
         if (!$this->hasValidToken()) {
@@ -139,7 +141,7 @@ class HubspotService
 
         $data = json_decode($response->getBody(), true);
 
-        return [
+        $overview = [
             'portal_id'    => $data['portalId'] ?? null,
             'company_name' => $data['accountName'] ?? 'DevNest',
             'region'       => $data['dataCenterRegion'] ?? 'na1',
@@ -150,6 +152,21 @@ class HubspotService
                 'deals'     => $this->countObjects('deals'),
             ]
         ];
+
+        // 🔥 SALVA SNAPSHOT AUTOMÁTICO
+        HubspotSnapshot::updateOrCreate(
+    [
+        'portal_id' => $overview['portal_id'],
+        'snapshot_date' => now()->toDateString(),
+    ],
+    [
+        'contacts'  => $overview['objects']['contacts'],
+        'companies' => $overview['objects']['companies'],
+        'deals'     => $overview['objects']['deals'],
+    ]
+);
+
+        return $overview;
     }
 
     public function getPortalId(): ?int
