@@ -9,12 +9,20 @@ const props = defineProps({
 
 const emit = defineEmits(["updated"]);
 
-// ===== PIPELINE =====
-const pipeline = computed(() => ({
-  open: props.deals.filter(d => d.status === "open"),
-  won: props.deals.filter(d => d.status === "won"),
-  lost: props.deals.filter(d => d.status === "lost"),
-}));
+// ===== columns =====
+const columns = ref({
+  open: [],
+  won: [],
+  lost: [],
+});
+
+const mapDealsToColumns = () => {
+  columns.value.open = props.deals.filter(d => d.status === "open");
+  columns.value.won = props.deals.filter(d => d.status === "won");
+  columns.value.lost = props.deals.filter(d => d.status === "lost");
+};
+
+watch(() => props.deals, mapDealsToColumns, { immediate: true });
 
 // ===== UPDATE STATUS =====
 const updateDealStatus = async (deal, status) => {
@@ -31,6 +39,15 @@ const onDrop = async (event, status) => {
   const deal = event.item.__vueParentComponent.props.element;
   await updateDealStatus(deal, status);
 };
+
+onMounted(() => {
+  window.Echo.channel("deals")
+    .listen(".deal.updated", (e) => {
+      console.log("🔥 realtime chegou", e);
+
+      emit("updated"); // recarrega lista do backend
+    });
+});
 </script>
 
 <template>
@@ -41,7 +58,7 @@ const onDrop = async (event, status) => {
       <h3>🟡 Abertos</h3>
 
       <draggable
-        :list="pipeline.open"
+        :list="columns.open"
         group="deals"
         item-key="id"
         @end="(e) => onDrop(e, 'open')"
@@ -61,7 +78,7 @@ const onDrop = async (event, status) => {
       <h3>🟢 Ganhos</h3>
 
       <draggable
-        :list="pipeline.won"
+        :list="columns.won"
         group="deals"
         item-key="id"
         @end="(e) => onDrop(e, 'won')"
@@ -81,7 +98,7 @@ const onDrop = async (event, status) => {
       <h3>🔴 Perdidos</h3>
 
       <draggable
-        :list="pipeline.lost"
+        :list="columns.lost"
         group="deals"
         item-key="id"
         @end="(e) => onDrop(e, 'lost')"
