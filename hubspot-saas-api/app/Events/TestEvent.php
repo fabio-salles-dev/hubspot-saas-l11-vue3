@@ -4,6 +4,8 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Support\Facades\Log;
+
 
 class TestEvent implements ShouldBroadcast
 {
@@ -18,7 +20,7 @@ class TestEvent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        \Log::info('BROADCAST EXECUTADO', [
+        Log::info('BROADCAST EXECUTADO', [
             'user_id' => $this->userId,
             'data' => $this->data
         ]);
