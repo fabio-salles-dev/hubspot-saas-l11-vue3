@@ -2,6 +2,8 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import api from '../services/api'
+import echo from '../services/echo'
+
 
 Chart.register(...registerables)
 
@@ -190,6 +192,8 @@ const renderHistoryChart = () => {
 
 // ===== ON MOUNT =====
 onMounted(async () => {
+
+   console.log("KEY:", import.meta.env.VITE_REVERB_APP_KEY);
   try {
     const { data } = await api.get('/hubspot/status')
     connected.value = data.connected
@@ -202,6 +206,16 @@ onMounted(async () => {
   } catch {
     error.value = '❌ Não foi possível verificar o status do HubSpot'
   } finally { loading.value = false }
+
+    // ===== CONFIGURA ECHO PARA RECEBER EVENTOS =====
+   echo.private('user.1')
+  .listen('.test.event', (e) => {
+    console.log('🔥 Evento recebido:', e)
+
+    loadOverview()
+    loadHistory()
+  })
+  
 })
 </script>
 
@@ -234,6 +248,7 @@ onMounted(async () => {
             <p><strong>Portal ID:</strong> {{ account.portal_id }}</p>
             <p><strong>Região:</strong> {{ overview?.region ?? '—' }}</p>
             <p><strong>Timezone:</strong> {{ overview?.timezone ?? '—' }}</p>
+            <p><strong>Último Snapshot:</strong> {{ overview ? new Date(overview.snapshot_date).toLocaleString() : '—' }}</p>
           </div>
 
           <!-- Métricas animadas -->

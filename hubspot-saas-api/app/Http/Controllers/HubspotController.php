@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\HubspotService;
-//use App\Models\Client;
 use App\Models\HubspotSnapshot;
+use App\Services\HubspotService;
 use Illuminate\Http\Request;
 
 class HubspotController extends Controller
@@ -13,10 +12,18 @@ class HubspotController extends Controller
         private HubspotService $hubspot
     ) {}
 
+    /**
+     * ============================================================
+     * REDIRECIONAR PARA O HUBSPOT
+     * ============================================================
+     */
     public function redirectToHubspot()
     {
         $state = csrf_token();
-        session(['hubspot_oauth_state' => $state]);
+
+        session([
+            'hubspot_oauth_state' => $state
+        ]);
 
         $query = http_build_query([
             'client_id'     => config('services.hubspot.client_id'),
@@ -26,65 +33,354 @@ class HubspotController extends Controller
             'state'         => $state,
         ]);
 
-        return redirect("https://app.hubspot.com/oauth/authorize?{$query}");
+        return redirect(
+            "https://app.hubspot.com/oauth/authorize?{$query}"
+        );
     }
 
+    /**
+     * ============================================================
+     * CALLBACK DO OAUTH
+     * ============================================================
+     */
     public function callback(Request $request)
     {
+        /*
+         * Verifica se recebeu o código.
+         */
         if (!$request->code) {
-            return response()->json(['error' => 'Authorization code não recebido'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Authorization code não recebido'
+            ], 400);
         }
 
-        if ($request->state !== session('hubspot_oauth_state')) {
-            return response()->json(['error' => 'State inválido'], 403);
+        /*
+         * Verifica o state.
+         */
+        if (
+            $request->state !==
+            session('hubspot_oauth_state')
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'State inválido'
+            ], 403);
         }
 
-        $this->hubspot->exchangeCodeForToken($request->code);
+        try {
 
-        return redirect('http://localhost:5173/hubspot?status=success');
+            /*
+             * Troca authorization code por tokens.
+             */
+            $this->hubspot->exchangeCodeForToken(
+                $request->code
+            );
+
+            /*
+             * Remove o state utilizado.
+             */
+            session()->forget('hubspot_oauth_state');
+
+            /*
+             * Redireciona para o Vue.
+             */
+            return redirect(
+                'http://localhost:5173/hubspot?status=success'
+            );
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao conectar com o HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
     }
 
+    /**
+     * ============================================================
+     * STATUS DA CONEXÃO
+     * ============================================================
+     */
     public function status()
     {
+        $connected =
+            $this->hubspot->hasValidToken();
+
         return response()->json([
-            'connected' => $this->hubspot->hasValidToken(),
-            'account' => $this->hubspot->hasValidToken()
+            'success' => true,
+
+            'connected' => $connected,
+
+            'account' => $connected
                 ? $this->hubspot->getAccountInfo()
-                : null
+                : null,
         ]);
     }
 
+    /**
+     * ============================================================
+     * OVERVIEW
+     *
+     * Retorna o último snapshot salvo no banco.
+     * ============================================================
+     */
     public function overview()
     {
-        $snapshot = HubspotSnapshot::latest('snapshot_date')->first();
+        $snapshot = HubspotSnapshot::latest(
+            'snapshot_date'
+        )->first();
 
         if (!$snapshot) {
-            return response()->json(['message' => 'Nenhum snapshot disponível'], 404);
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Nenhum snapshot disponível'
+            ], 404);
         }
 
         return response()->json([
-            'portal_id'    => $snapshot->portal_id,
-            'company_name' => $snapshot->company_name,
-            'region'       => $snapshot->region,
-            'timezone'     => $snapshot->timezone,
-            'objects'      => [
-                'contacts'  => $snapshot->contacts,
-                'companies' => $snapshot->companies,
-                'deals'     => $snapshot->deals,
+            'success' => true,
+
+            'portal_id' =>
+                $snapshot->portal_id,
+
+            'company_name' =>
+                $snapshot->company_name,
+
+            'region' =>
+                $snapshot->region,
+
+            'timezone' =>
+                $snapshot->timezone,
+
+            'snapshot_date' =>
+                $snapshot->snapshot_date,
+
+            'objects' => [
+                'contacts' =>
+                    $snapshot->contacts,
+
+                'companies' =>
+                    $snapshot->companies,
+
+                'deals' =>
+                    $snapshot->deals,
             ]
         ]);
     }
 
+    /**
+     * ============================================================
+     * LIVE OVERVIEW
+     *
+     * Busca os dados diretamente no HubSpot.
+     * ============================================================
+     */
     public function liveOverview()
     {
-        return response()->json(
-            $this->hubspot->getAccountOverview()
-        );
+        if (!$this->hubspot->hasValidToken()) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'HubSpot não conectado'
+            ], 401);
+        }
+
+        try {
+
+            $overview =
+                $this->hubspot->getAccountOverview();
+
+            if (!$overview) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'Não foi possível obter o overview'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                ...$overview,
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao buscar overview do HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
     }
 
+    /**
+     * ============================================================
+     * CONTATOS
+     * ============================================================
+     */
+    public function contacts()
+    {
+        if (!$this->hubspot->hasValidToken()) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'HubSpot não conectado'
+            ], 401);
+        }
+
+        try {
+
+            $contacts =
+                $this->hubspot->getContacts();
+
+            return response()->json([
+                'success' => true,
+
+                'total' =>
+                    count($contacts),
+
+                'data' =>
+                    $contacts,
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao buscar contatos no HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     * EMPRESAS
+     * ============================================================
+     */
+    public function companies()
+    {
+        if (!$this->hubspot->hasValidToken()) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'HubSpot não conectado'
+            ], 401);
+        }
+
+        try {
+
+            $companies =
+                $this->hubspot->getCompanies();
+
+            return response()->json([
+                'success' => true,
+
+                'total' =>
+                    count($companies),
+
+                'data' =>
+                    $companies,
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao buscar empresas no HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     * NEGÓCIOS
+     *
+     * Endpoint legado.
+     *
+     * O endpoint recomendado para negócios é:
+     *
+     * /api/hubspot/deals
+     *
+     * através do HubspotDealController.
+     * ============================================================
+     */
+    public function deals()
+    {
+        if (!$this->hubspot->hasValidToken()) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'HubSpot não conectado'
+            ], 401);
+        }
+
+        try {
+
+            $deals =
+                $this->hubspot->getDeals();
+
+            return response()->json([
+                'success' => true,
+
+                'total' =>
+                    count($deals),
+
+                'data' =>
+                    $deals,
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao buscar negócios no HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     * DESCONECTAR
+     * ============================================================
+     */
     public function disconnect()
     {
-        $this->hubspot->disconnect();
-        return response()->json(['message' => 'HubSpot desconectado com sucesso']);
+        try {
+
+            $this->hubspot->disconnect();
+
+            return response()->json([
+                'success' => true,
+                'message' =>
+                    'HubSpot desconectado com sucesso'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao desconectar o HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
     }
 }

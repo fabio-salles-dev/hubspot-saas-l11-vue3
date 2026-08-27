@@ -1,13 +1,38 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
-import { Chart, registerables } from "chart.js";
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  nextTick,
+} from "vue";
+
+import {
+  Chart,
+  registerables,
+} from "chart.js";
 
 Chart.register(...registerables);
 
+// =====================================================
+// PROPS
+// =====================================================
+
 const props = defineProps({
-  overview: Object,
-  history: Array,
+  overview: {
+    type: Object,
+    default: null,
+  },
+
+  history: {
+    type: Array,
+    default: () => [],
+  },
 });
+
+// =====================================================
+// REFS
+// =====================================================
 
 const metricsCanvas = ref(null);
 const historyCanvas = ref(null);
@@ -15,215 +40,636 @@ const historyCanvas = ref(null);
 let metricsChart = null;
 let historyChart = null;
 
-// ================== GROWTH ==================
-const calculateGrowthData = (arr) => {
-  if (!arr || arr.length < 2) return arr || [0];
+// =====================================================
+// DESTROY CHARTS
+// =====================================================
 
-  return arr.map((value, index) => {
-    if (index === 0) return 0;
-    return value - arr[index - 1];
-  });
+const destroyMetricsChart = () => {
+  if (metricsChart) {
+    metricsChart.destroy();
+    metricsChart = null;
+  }
 };
 
-// ================== METRICS ==================
-const renderMetrics = async () => {
-  if (!props.overview?.objects || !metricsCanvas.value) return;
+const destroyHistoryChart = () => {
+  if (historyChart) {
+    historyChart.destroy();
+    historyChart = null;
+  }
+};
 
+// =====================================================
+// METRICS CHART
+// =====================================================
+
+const renderMetrics = async () => {
   await nextTick();
-  metricsChart?.destroy();
+
+  if (!metricsCanvas.value) {
+    console.warn("HubspotCharts: metricsCanvas não encontrado");
+    return;
+  }
+
+  if (!props.overview?.objects) {
+    destroyMetricsChart();
+    return;
+  }
+
+  destroyMetricsChart();
+
+  console.log("🔥 CRIANDO GRÁFICO DE MÉTRICAS");
+
+console.log("Dados:", {
+  contacts: props.overview.objects.contacts,
+  companies: props.overview.objects.companies,
+  deals: props.overview.objects.deals,
+});
+
+console.log("Canvas:", metricsCanvas.value);
+
+  const contacts = Number(
+    props.overview.objects.contacts ?? 0
+  );
+
+  const companies = Number(
+    props.overview.objects.companies ?? 0
+  );
+
+  const deals = Number(
+    props.overview.objects.deals ?? 0
+  );
 
   metricsChart = new Chart(metricsCanvas.value, {
     type: "doughnut",
+
     data: {
-      labels: ["Contatos", "Empresas", "Negócios"],
+      labels: [
+        "Contatos",
+        "Empresas",
+        "Negócios",
+      ],
+
       datasets: [
         {
           data: [
-            props.overview.objects.contacts || 0,
-            props.overview.objects.companies || 0,
-            props.overview.objects.deals || 0,
+            contacts,
+            companies,
+            deals,
           ],
-          backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
-          borderWidth: 0,
+
+          backgroundColor: [
+            "#3b82f6",
+            "#10b981",
+            "#f59e0b",
+          ],
+
+          borderColor: "#ffffff",
+          borderWidth: 3,
+
+          hoverOffset: 8,
         },
       ],
     },
+
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      cutout: "62%",
+
       plugins: {
-        legend: { position: "bottom" },
+        legend: {
+          position: "bottom",
+
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: "circle",
+          },
+        },
+
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const value = context.raw ?? 0;
+
+              return ` ${context.label}: ${value}`;
+            },
+          },
+        },
+      },
+
+      animation: {
+        duration: 800,
       },
     },
   });
 };
 
-// ================== HISTORY ==================
+// =====================================================
+// HISTORY
+// =====================================================
+
 const renderHistory = async () => {
-  if (!historyCanvas.value) return;
-
   await nextTick();
-  historyChart?.destroy();
 
-  const hasData = props.history?.length > 0;
+  if (!historyCanvas.value) {
+    console.warn("HubspotCharts: historyCanvas não encontrado");
+    return;
+  }
 
-  const labels = hasData
-    ? props.history.map((h) =>
-        new Date(h.snapshot_date).toLocaleDateString("pt-BR")
-      )
-    : ["Sem dados"];
+  destroyHistoryChart();
 
-  const contacts = hasData ? props.history.map((h) => h.contacts) : [0];
-  const companies = hasData ? props.history.map((h) => h.companies) : [0];
-  const deals = hasData ? props.history.map((h) => h.deals) : [0];
+  const history = Array.isArray(props.history)
+    ? props.history
+    : [];
 
-  const contactsGrowth = calculateGrowthData(contacts);
-  const companiesGrowth = calculateGrowthData(companies);
-  const dealsGrowth = calculateGrowthData(deals);
+  // ---------------------------------------------------
+  // SEM HISTÓRICO
+  // ---------------------------------------------------
+
+  if (!history.length) {
+    return;
+  }
+
+  // ---------------------------------------------------
+  // ORDENA POR DATA
+  // ---------------------------------------------------
+
+  const sortedHistory = [...history].sort(
+    (a, b) =>
+      new Date(a.snapshot_date) -
+      new Date(b.snapshot_date)
+  );
+
+  const labels = sortedHistory.map((item) =>
+    new Date(item.snapshot_date).toLocaleDateString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "2-digit",
+      }
+    )
+  );
+
+  const contacts = sortedHistory.map((item) =>
+    Number(item.contacts ?? 0)
+  );
+
+  const companies = sortedHistory.map((item) =>
+    Number(item.companies ?? 0)
+  );
+
+  const deals = sortedHistory.map((item) =>
+    Number(item.deals ?? 0)
+  );
+
+  // ---------------------------------------------------
+  // GRÁFICO
+  // ---------------------------------------------------
 
   historyChart = new Chart(historyCanvas.value, {
     type: "line",
+
     data: {
       labels,
+
       datasets: [
         {
-          label: "Contatos (crescimento)",
-          data: contactsGrowth,
+          label: "Contatos",
+
+          data: contacts,
+
+          borderColor: "#3b82f6",
+
+          backgroundColor:
+            "rgba(59,130,246,0.10)",
+
+          borderWidth: 3,
+
           tension: 0.4,
-          borderWidth: 2,
+
+          fill: true,
+
+          pointRadius: 4,
+
+          pointHoverRadius: 7,
         },
+
         {
-          label: "Empresas (crescimento)",
-          data: companiesGrowth,
+          label: "Empresas",
+
+          data: companies,
+
+          borderColor: "#10b981",
+
+          backgroundColor:
+            "rgba(16,185,129,0.10)",
+
+          borderWidth: 3,
+
           tension: 0.4,
-          borderWidth: 2,
+
+          fill: true,
+
+          pointRadius: 4,
+
+          pointHoverRadius: 7,
         },
+
         {
-          label: "Negócios (crescimento)",
-          data: dealsGrowth,
+          label: "Negócios",
+
+          data: deals,
+
+          borderColor: "#f59e0b",
+
+          backgroundColor:
+            "rgba(245,158,11,0.10)",
+
+          borderWidth: 3,
+
           tension: 0.4,
-          borderWidth: 2,
+
+          fill: true,
+
+          pointRadius: 4,
+
+          pointHoverRadius: 7,
         },
       ],
     },
+
     options: {
       responsive: true,
+
       maintainAspectRatio: false,
+
       interaction: {
         mode: "index",
         intersect: false,
       },
+
       plugins: {
-        legend: { position: "top" },
+        legend: {
+          position: "top",
+
+          labels: {
+            usePointStyle: true,
+            pointStyle: "circle",
+            padding: 20,
+          },
+        },
+
+        tooltip: {
+          mode: "index",
+          intersect: false,
+        },
       },
+
       scales: {
+        x: {
+          grid: {
+            display: false,
+          },
+        },
+
         y: {
           beginAtZero: true,
-          ticks: { precision: 0 },
+
+          ticks: {
+            precision: 0,
+          },
+
+          grid: {
+            color: "rgba(148,163,184,0.15)",
+          },
         },
+      },
+
+      animation: {
+        duration: 800,
       },
     },
   });
 };
 
-// ================== WATCH ==================
-watch(() => props.overview, renderMetrics, { deep: true });
-watch(() => props.history, renderHistory, { deep: true });
+// =====================================================
+// RENDER ALL
+// =====================================================
 
-// ================== AUTO REFRESH ==================
-let interval = null;
+const renderCharts = async () => {
+  await nextTick();
 
-onMounted(() => {
+  await renderMetrics();
+
+  await renderHistory();
+};
+
+// =====================================================
+// WATCH OVERVIEW
+// =====================================================
+
+watch(
+  () => props.overview,
+  async () => {
+    await renderMetrics();
+  },
+  {
+    deep: true,
+  }
+);
+
+// =====================================================
+// WATCH HISTORY
+// =====================================================
+
+watch(
+  () => props.history,
+  async () => {
+    await renderHistory();
+  },
+  {
+    deep: true,
+  }
+);
+
+// =====================================================
+// AUTO REFRESH EVENT
+// =====================================================
+
+onMounted(async () => {
+  await nextTick();
+
   renderMetrics();
   renderHistory();
-
-  interval = setInterval(() => {
-    window.dispatchEvent(new Event("refresh-dashboard"));
-  }, 15000); // 15 segundos
 });
 
+// =====================================================
+// CLEANUP
+// =====================================================
+
 onBeforeUnmount(() => {
-  metricsChart?.destroy();
-  historyChart?.destroy();
-  clearInterval(interval);
+  destroyMetricsChart();
+  destroyHistoryChart();
+
 });
 </script>
 
 <template>
   <div class="charts-container">
 
-    <!-- MÉTRICAS -->
+    <!-- ========================================= -->
+    <!-- VISÃO GERAL -->
+    <!-- ========================================= -->
+
     <div class="chart-card">
-      <h3>Visão Geral</h3>
-      <div class="chart-wrapper">
-        <canvas ref="metricsCanvas"></canvas>
-      </div>
-    </div>
 
-    <!-- HISTÓRICO -->
-    <div class="chart-card">
-      <h3>Histórico (Últimos 30 dias)</h3>
+      <div class="chart-header">
+        <div>
+          <h3>Visão Geral</h3>
 
-      <div class="chart-wrapper">
-        <!-- Canvas SEMPRE existe -->
-        <canvas ref="historyCanvas"></canvas>
-
-        <!-- Overlay se vazio -->
-        <div v-if="!history?.length" class="empty-overlay">
-          <p>📭 Sem histórico disponível</p>
+          <p>
+            Distribuição dos dados do CRM
+          </p>
         </div>
       </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          ref="metricsCanvas"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- HISTÓRICO -->
+    <!-- ========================================= -->
+
+    <div class="chart-card">
+
+      <div class="chart-header">
+        <div>
+          <h3>Histórico</h3>
+
+          <p>
+            Evolução dos últimos 30 dias
+          </p>
+        </div>
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          v-if="history?.length"
+          ref="historyCanvas"
+        ></canvas>
+
+        <div
+          v-else
+          class="empty-overlay"
+        >
+          <div class="empty-content">
+
+            <span class="empty-icon">
+              📭
+            </span>
+
+            <strong>
+              Sem histórico disponível
+            </strong>
+
+            <small>
+              Novos snapshots aparecerão aqui
+              conforme os dados forem atualizados.
+            </small>
+
+          </div>
+        </div>
+
+      </div>
+
     </div>
 
   </div>
 </template>
 
 <style scoped>
+
 .charts-container {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  padding: 10px;
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 24px;
+
+  width: 100%;
 }
 
+/* ================================================= */
+/* CARD */
+/* ================================================= */
+
 .chart-card {
-  flex: 1 1 48%;
-  min-height: 380px;
+  min-width: 0;
+
+  height: 390px;
+
   background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  border-radius: 16px;
+
+  padding: 24px;
+
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.06);
+
+  border:
+    1px solid #e2e8f0;
+
   display: flex;
+
   flex-direction: column;
 }
 
-.chart-card h3 {
-  margin-bottom: 20px;
-  font-size: 1.1rem;
-  color: #333;
+/* ================================================= */
+/* HEADER */
+/* ================================================= */
+
+.chart-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  margin-bottom: 16px;
 }
 
-.chart-wrapper {
-  flex: 1;
-  position: relative;
+.chart-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.15rem;
+
+  font-weight: 700;
 }
+
+.chart-header p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.85rem;
+}
+
+/* ================================================= */
+/* CANVAS */
+/* ================================================= */
+
+.chart-wrapper {
+  position: relative;
+
+  flex: 1;
+
+  min-height: 0;
+
+  width: 100%;
+}
+
+.chart-wrapper canvas {
+  width: 100% !important;
+
+  height: 100% !important;
+
+  display: block;
+}
+
+/* ================================================= */
+/* EMPTY */
+/* ================================================= */
 
 .empty-overlay {
   position: absolute;
+
   inset: 0;
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px dashed #ddd;
-  color: #888;
+
+  background: #f8fafc;
+
+  border-radius: 12px;
+
+  border: 1px dashed #cbd5e1;
+}
+
+.empty-content {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
   text-align: center;
+
+  gap: 8px;
+
+  padding: 20px;
+
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 32px;
+
+  margin-bottom: 4px;
+}
+
+.empty-content strong {
+  color: #475569;
+
+  font-size: 0.95rem;
+}
+
+.empty-content small {
+  max-width: 280px;
+
+  line-height: 1.5;
+
+  font-size: 0.8rem;
+
+  color: #94a3b8;
+}
+
+/* ================================================= */
+/* RESPONSIVO */
+/* ================================================= */
+
+@media (max-width: 900px) {
+
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 768px) {
+
   .chart-card {
-    flex: 1 1 100%;
+    height: 350px;
+
+    padding: 18px;
   }
+
 }
+
 </style>
