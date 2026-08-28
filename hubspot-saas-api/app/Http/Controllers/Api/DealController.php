@@ -5,19 +5,26 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Deal;
 use Illuminate\Http\Request;
+use App\Events\DealUpdated;
 
 class DealController extends Controller
 {
     public function index(Request $request)
     {
         return Deal::with(['client', 'company'])
-            ->when($request->status, fn ($q) =>
+            ->when(
+                $request->status,
+                fn($q) =>
                 $q->where('status', $request->status)
             )
-            ->when($request->company_id, fn ($q) =>
+            ->when(
+                $request->company_id,
+                fn($q) =>
                 $q->where('company_id', $request->company_id)
             )
-            ->when($request->client_id, fn ($q) =>
+            ->when(
+                $request->client_id,
+                fn($q) =>
                 $q->where('client_id', $request->client_id)
             )
             ->orderBy(
@@ -56,6 +63,9 @@ class DealController extends Controller
         ]);
 
         $deal->update($data);
+
+
+        broadcast(new DealUpdated($deal))->toOthers();
 
         return $deal->refresh();
     }

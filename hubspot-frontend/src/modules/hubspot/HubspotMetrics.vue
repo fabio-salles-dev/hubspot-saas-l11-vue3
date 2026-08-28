@@ -4,6 +4,17 @@ defineProps({
   companies: Number,
   deals: Number
 })
+
+const getGrowth = (key) => {
+  if (!props.history || props.history.length < 2) return 0;
+
+  const last = props.history[props.history.length - 1][key];
+  const prev = props.history[props.history.length - 2][key];
+
+  if (!prev) return 0;
+
+  return ((last - prev) / prev * 100).toFixed(1);
+};
 </script>
 
 <template>
@@ -27,4 +38,5 @@ defineProps({
       <small>Negócios</small>
     </div>
   </div>
+  
 </template>

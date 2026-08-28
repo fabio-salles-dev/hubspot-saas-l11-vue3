@@ -5,7 +5,7 @@ import api from "../services/api";
 import HubspotStatus from "../modules/hubspot/HubspotStatus.vue";
 import HubspotMetrics from "../modules/hubspot/HubspotMetrics.vue";
 import HubspotCharts from "../modules/hubspot/HubspotCharts.vue";
-
+import DealsKanban from "../modules/deals/DealsKanban.vue";
 import DealsCards from "../modules/deals/DealsCard.vue";
 import DealsTable from "../modules/deals/DealsTable.vue";
 
@@ -171,11 +171,11 @@ onMounted(() => {
         <!-- DEALS -->
         <section v-if="deals.length" class="section-group deals-section">
           <div class="section-header">
-            <h2>💼 Negócios em Aberto</h2>
-            <p>Acompanhamento de pipeline em tempo real</p>
+            <h2 style="margin: 0; font-size: 1.5rem; color: #1e3a8a; text-align: center;">💼 Negócios em Aberto</h2>
+            <p style="text-align: center;">Acompanhamento de pipeline em tempo real</p>
           </div>
 
-          <DealsCards :deals="deals" />
+          <DealsKanban :deals="deals" @updated="loadDeals" />
 
           <div class="shadow-sm table-container">
             <DealsTable :deals="deals" />
@@ -193,3 +193,57 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.dashboard-container {
+  max-width: 1900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+header.dashboard-header {
+  margin-bottom: 20px;
+}
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.section-group {
+  background: #f1f5f9;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.section-header {
+  margin-bottom: 20px;
+}
+.chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.deals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.global-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+}
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #1e3a8a;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
