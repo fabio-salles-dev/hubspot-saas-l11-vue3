@@ -6,27 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('companies', function (Blueprint $table) {
+        Schema::create('workspaces', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
-            $table->string('hubspot_id')->unique();
+            $table->string('slug')->unique();
+
             $table->timestamps();
         });
-
-        // Adiciona a chave estrangeira na tabela clients
-
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('companies');
+        Schema::dropIfExists('workspaces');
     }
 };

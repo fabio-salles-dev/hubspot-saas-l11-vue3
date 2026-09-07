@@ -1,125 +1,291 @@
 <script setup>
-import i18n from '../../i18n/hubspot' // Importa o arquivo de tradução
+import i18n from "../../i18n/hubspot";
+
+// ============================================================
+// PROPS
+// ============================================================
 
 defineProps({
-  connected: Boolean,
-  account: Object,
-  overview: Object,
-  platformName: String,
-})
+  connected: {
+    type: Boolean,
+    default: false
+  },
 
-defineEmits(["connect", "disconnect"])
+  account: {
+    type: Object,
+    default: null
+  },
 
-// 🌎 Detecta idioma (normalizado)
-const locale = navigator.language?.startsWith('pt')
-  ? 'pt-BR'
-  : 'en-US'
+  overview: {
+    type: Object,
+    default: null
+  },
 
-// 🌍 Tradução
+  platformName: {
+    type: String,
+    default: "HubSpot Account"
+  },
+
+  loading: {
+    type: Boolean,
+    default: false
+  },
+
+  importing: {
+    type: Boolean,
+    default: false
+  },
+
+  error: {
+    type: String,
+    default: null
+  }
+});
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+defineEmits([
+  "connect",
+  "disconnect",
+  "import"
+]);
+
+// ============================================================
+// LOCALE
+// ============================================================
+
+const locale = navigator.language?.startsWith("pt")
+  ? "pt-BR"
+  : "en-US";
+
+// ============================================================
+// TRANSLATION
+// ============================================================
+
 const t = (key) => {
-  return i18n[locale]?.[key] || key
-}
+  return i18n[locale]?.[key] || key;
+};
 
-// 🌎 Região amigável
+// ============================================================
+// REGION
+// ============================================================
+
 const regionLabel = (region) => {
   const map = {
     na1: {
-      'pt-BR': '🌎 América',
-      'en-US': '🌎 North America',
+      "pt-BR": "🌎 América",
+      "en-US": "🌎 North America"
     },
+
     eu1: {
-      'pt-BR': '🇪🇺 Europa',
-      'en-US': '🇪🇺 Europe',
+      "pt-BR": "🇪🇺 Europa",
+      "en-US": "🇪🇺 Europe"
     },
+
     ap1: {
-      'pt-BR': '🌏 Ásia',
-      'en-US': '🌏 Asia',
-    },
+      "pt-BR": "🌏 Ásia",
+      "en-US": "🌏 Asia"
+    }
+  };
+
+  return map[region]?.[locale] || region || "—";
+};
+
+// ============================================================
+// TIMEZONE
+// ============================================================
+
+const timezoneLabel = (timezone) => {
+  if (!timezone) {
+    return "—";
   }
 
-  return map[region]?.[locale] || region || 'N/A'
-}
-
-// ⏰ Timezone amigável
-const timezoneLabel = (tz) => {
-  if (!tz) return '—'
-
-  if (tz.includes('Sao_Paulo')) {
-    return locale === 'pt-BR'
-      ? '🇧🇷 Brasil (São Paulo)'
-      : '🇧🇷 Brazil (São Paulo)'
+  if (timezone.includes("Sao_Paulo")) {
+    return locale === "pt-BR"
+      ? "🇧🇷 Brasil (São Paulo)"
+      : "🇧🇷 Brazil (São Paulo)";
   }
 
-  if (tz.includes('Eastern')) {
-    return locale === 'pt-BR'
-      ? '🇺🇸 EUA (Eastern)'
-      : '🇺🇸 USA (Eastern)'
+  if (timezone.includes("Eastern")) {
+    return locale === "pt-BR"
+      ? "🇺🇸 EUA (Eastern)"
+      : "🇺🇸 USA (Eastern)";
   }
 
-  return tz
-}
+  return timezone;
+};
 </script>
 
 <template>
   <div class="status-card">
-    <!-- NÃO CONECTADO -->
-    <div v-if="!connected" class="status-center">
-      <div class="badge success">✅ {{ t('connected') }}</div>
-      <button class="btn primary" @click="$emit('connect')">
+
+    <!-- ================================================== -->
+    <!-- LOADING -->
+    <!-- ================================================== -->
+
+    <div
+      v-if="loading"
+      class="status-center"
+    >
+      <div class="badge loading">
+        ⏳ Verificando conexão com o HubSpot...
+      </div>
+    </div>
+
+    <!-- ================================================== -->
+    <!-- ERROR -->
+    <!-- ================================================== -->
+
+    <div
+      v-else-if="error"
+      class="status-center"
+    >
+      <div class="badge error">
+        ⚠️ {{ error }}
+      </div>
+
+      <button
+        v-if="!connected"
+        class="btn primary"
+        @click="$emit('connect')"
+      >
         🔐 Conectar HubSpot
       </button>
     </div>
 
-    <!-- CONECTADO -->
-    <div v-else>
-      <div class="status-header">
-        <div class="badge success">✅ HubSpot conectado</div>
-        <button class="btn danger small" @click="$emit('disconnect')">
-          🔌 Desconectar
-        </button>
+    <!-- ================================================== -->
+    <!-- NÃO CONECTADO -->
+    <!-- ================================================== -->
+
+    <div
+      v-else-if="!connected"
+      class="status-center"
+    >
+      <div class="badge warning">
+        ⚠️ HubSpot não conectado
       </div>
 
+      <button
+        class="btn primary"
+        @click="$emit('connect')"
+      >
+        🔐 Conectar HubSpot
+      </button>
+    </div>
+
+    <!-- ================================================== -->
+    <!-- CONECTADO -->
+    <!-- ================================================== -->
+
+    <div v-else>
+
+      <div class="status-header">
+
+        <div class="badge success">
+          ✅ {{ t("connected") }}
+        </div>
+
+        <div class="status-actions">
+
+          <button
+            class="btn secondary small"
+            :disabled="importing"
+            @click="$emit('import')"
+          >
+            <span v-if="!importing">
+              📥 Importar contatos
+            </span>
+
+            <span v-else>
+              ⏳ Importando...
+            </span>
+          </button>
+
+          <button
+            class="btn danger small"
+            @click="$emit('disconnect')"
+          >
+            🔌 Desconectar
+          </button>
+
+        </div>
+      </div>
+
+      <!-- ================================================== -->
+      <!-- ACCOUNT -->
+      <!-- ================================================== -->
+
       <div class="account-box">
+
         <div>
           <span>Conta</span>
-          <strong>{{ overview?.company_name || platformName }}</strong>
+
+          <strong>
+            {{
+              overview?.company_name
+              || account?.company_name
+              || platformName
+            }}
+          </strong>
         </div>
 
         <div>
           <span>Portal ID</span>
-          <strong>{{ overview?.portal_id }}</strong>
+
+          <strong>
+            {{
+              overview?.portal_id
+              || account?.portal_id
+              || "—"
+            }}
+          </strong>
         </div>
 
         <div>
           <span>Região</span>
 
           <strong>
-            {{ regionLabel(overview?.region) }}
+            {{
+              regionLabel(
+                overview?.region
+                || account?.region
+              )
+            }}
           </strong>
         </div>
 
         <div>
           <span>Timezone</span>
-          <strong>{{ timezoneLabel(overview?.timezone) }}</strong>
+
+          <strong>
+            {{
+              timezoneLabel(
+                overview?.timezone
+                || account?.timezone
+              )
+            }}
+          </strong>
         </div>
+
       </div>
     </div>
+
+    <!-- ================================================== -->
+    <!-- DOCUMENTATION -->
+    <!-- ================================================== -->
+
     <a
+      class="documentation-link"
       href="https://developers.hubspot.com/docs/api/overview"
       target="_blank"
-      style="
-        font-size: 12px;
-        color: #64748b;
-        margin-top: 12px;
-        display: inline-block;
-      "
+      rel="noopener noreferrer"
     >
       📚 Documentação da API HubSpot
     </a>
-  </div>
 
-  <!-- Debug para você ver os dados chegando -->
-  <!-- <pre v-if="connected" style="font-size: 10px; margin-top: 10px;">{{ account }}</pre> -->
+  </div>
 </template>
 
 <style scoped>
@@ -131,7 +297,10 @@ const timezoneLabel = (tz) => {
   margin-bottom: 24px;
 }
 
-/* NÃO CONECTADO */
+/* ========================================================= */
+/* CENTER */
+/* ========================================================= */
+
 .status-center {
   display: flex;
   flex-direction: column;
@@ -139,15 +308,28 @@ const timezoneLabel = (tz) => {
   gap: 16px;
 }
 
-/* HEADER CONECTADO */
+/* ========================================================= */
+/* HEADER */
+/* ========================================================= */
+
 .status-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-/* DADOS DA CONTA */
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ========================================================= */
+/* ACCOUNT */
+/* ========================================================= */
+
 .account-box {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -173,13 +355,19 @@ const timezoneLabel = (tz) => {
   font-weight: 600;
 }
 
-/* BOTÕES */
+/* ========================================================= */
+/* BUTTONS */
+/* ========================================================= */
+
 .btn {
   padding: 12px 16px;
   border-radius: 10px;
   font-weight: 600;
   border: none;
   cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
 }
 
 .btn.small {
@@ -187,13 +375,27 @@ const timezoneLabel = (tz) => {
   font-size: 13px;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn.primary {
   background: #ff7a59;
   color: white;
 }
 
-.btn.primary:hover {
+.btn.primary:hover:not(:disabled) {
   background: #ff5c35;
+}
+
+.btn.secondary {
+  background: #33475b;
+  color: white;
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: #253342;
 }
 
 .btn.danger {
@@ -201,16 +403,24 @@ const timezoneLabel = (tz) => {
   color: white;
 }
 
-.btn.danger:hover {
+.btn.danger:hover:not(:disabled) {
   background: #b71c1c;
 }
 
+/* ========================================================= */
 /* BADGES */
+/* ========================================================= */
+
 .badge {
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.badge.loading {
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .badge.warning {
@@ -223,7 +433,31 @@ const timezoneLabel = (tz) => {
   color: #047857;
 }
 
+.badge.error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ========================================================= */
+/* DOCUMENTATION */
+/* ========================================================= */
+
+.documentation-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #64748b;
+  text-decoration: none;
+}
+
+.documentation-link:hover {
+  text-decoration: underline;
+}
+
+/* ========================================================= */
 /* MOBILE */
+/* ========================================================= */
+
 @media (max-width: 768px) {
   .account-box {
     grid-template-columns: 1fr;
@@ -232,7 +466,11 @@ const timezoneLabel = (tz) => {
   .status-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+  }
+
+  .status-actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 }
 </style>

@@ -2,20 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Company;
-use App\Models\Deal;
+use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'name',
         'email',
         'hubspot_id',
         'company_id',
+        'workspace_id',
     ];
 
     public function company()
@@ -26,5 +25,10 @@ class Client extends Model
     public function deals()
     {
         return $this->hasMany(Deal::class);
+    }
+
+    public function workspace()
+    {
+        return $this->belongsTo(Workspace::class);
     }
 }

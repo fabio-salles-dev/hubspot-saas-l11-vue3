@@ -1,41 +1,108 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import {
+  ref,
+  watch,
+  onMounted,
+  onBeforeUnmount
+} from "vue";
+
 import draggable from "vuedraggable";
-import api from "@/services/api";
+
+import {
+  updateDeal
+} from "./deals.service";
+
+// ============================================================
+// PROPS / EMITS
+// ============================================================
 
 const props = defineProps({
   deals: {
     type: Array,
-    default: () => [],
-  },
+    default: () => []
+  }
 });
 
-const emit = defineEmits(["updated"]);
+const emit = defineEmits([
+  "updated"
+]);
 
-// ==========================
-// COLUMNS
-// ==========================
+// ============================================================
+// CONFIGURAÇÃO DAS COLUNAS
+// ============================================================
+
+const kanbanColumns = [
+  {
+    status: "open",
+    title: "Abertos",
+    icon: "🟡",
+    className: "open"
+  },
+  {
+    status: "won",
+    title: "Ganhos",
+    icon: "🟢",
+    className: "success"
+  },
+  {
+    status: "lost",
+    title: "Perdidos",
+    icon: "🔴",
+    className: "danger"
+  }
+];
+
+// ============================================================
+// ESTADO
+// ============================================================
 
 const columns = ref({
   open: [],
   won: [],
-  lost: [],
+  lost: []
 });
 
+const updatingDealId = ref(null);
+
+// ============================================================
+// FORMATTERS
+// ============================================================
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL"
+    }
+  ).format(
+    Number(value) || 0
+  );
+};
+
+// ============================================================
+// MAP DEALS
+// ============================================================
+
 const mapDealsToColumns = () => {
-  const deals = props.deals || [];
+  const deals = props.deals ?? [];
 
-  columns.value.open = deals.filter(
-    (deal) => deal.status === "open"
-  );
+  columns.value = {
+    open: deals.filter(
+      deal =>
+        deal.status === "open"
+    ),
 
-  columns.value.won = deals.filter(
-    (deal) => deal.status === "won"
-  );
+    won: deals.filter(
+      deal =>
+        deal.status === "won"
+    ),
 
-  columns.value.lost = deals.filter(
-    (deal) => deal.status === "lost"
-  );
+    lost: deals.filter(
+      deal =>
+        deal.status === "lost"
+    )
+  };
 };
 
 watch(
@@ -43,312 +110,434 @@ watch(
   mapDealsToColumns,
   {
     immediate: true,
-    deep: true,
+    deep: true
   }
 );
 
-// ==========================
+// ============================================================
 // UPDATE STATUS
-// ==========================
+// ============================================================
 
-const updateDealStatus = async (deal, status) => {
-  console.log("🔥 UPDATE DEAL");
-  console.log("Deal:", deal);
-  console.log("ID:", deal?.id);
-  console.log("Status atual:", deal?.status);
-  console.log("Novo status:", status);
-
+const updateDealStatus = async (
+  deal,
+  status
+) => {
   if (!deal?.id) {
-    console.error("❌ Deal inválido:", deal);
+    throw new Error(
+      "Negócio sem ID."
+    );
+  }
+
+  updatingDealId.value =
+    deal.id;
+
+  try {
+    await updateDeal(
+      deal.id,
+      {
+        status
+      }
+    );
+
+  } finally {
+    updatingDealId.value =
+      null;
+  }
+};
+
+// ============================================================
+// CHANGE / DROP
+// ============================================================
+
+const onChange = async (
+  event,
+  status
+) => {
+  if (!event?.added) {
     return;
   }
 
+  const deal =
+    event.added.element;
+
+  if (!deal?.id) {
+    console.error(
+      "Negócio arrastado sem ID."
+    );
+
+    mapDealsToColumns();
+
+    return;
+  }
+
+  const previousStatus =
+    deal.status;
+
+  deal.status =
+    status;
+
   try {
-    const response = await api.put(`/deals/${deal.id}`, {
-      status: status,
-    });
+    await updateDealStatus(
+      deal,
+      status
+    );
 
-    console.log("✅ PUT realizado com sucesso");
-    console.log("Resposta:", response.data);
-
-    // Recarrega os dados do Dashboard
     emit("updated");
 
   } catch (error) {
-    console.error("❌ Erro ao atualizar deal:", error);
     console.error(
-      "Resposta da API:",
-      error.response?.data
+      "Erro ao atualizar status do negócio:",
+      error
     );
+
+    deal.status =
+      previousStatus;
+
+    mapDealsToColumns();
+
+    emit("updated");
   }
 };
 
-// ==========================
-// CHANGE / DROP
-// ==========================
-
-const onChange = async (event, status) => {
-  console.log("=================================");
-  console.log("🔥 CHANGE NO KANBAN");
-  console.log("Status destino:", status);
-  console.log("Evento:", event);
-  console.log("=================================");
-
-  // Só queremos tratar quando o deal
-  // entrou em uma nova coluna.
-  if (!event.added) {
-    console.log("ℹ️ Nenhum deal foi adicionado nesta coluna.");
-    return;
-  }
-
-  const deal = event.added.element;
-
-  console.log("🔥 DEAL ARRASTADO");
-  console.log("Deal:", deal);
-  console.log("ID:", deal?.id);
-  console.log("Título:", deal?.title);
-  console.log("Status antigo:", deal?.status);
-  console.log("Status novo:", status);
-
-  if (!deal?.id) {
-    console.error("❌ Deal sem ID.");
-    return;
-  }
-
-  // Atualiza o objeto local imediatamente.
-  deal.status = status;
-
-  await updateDealStatus(deal, status);
-};
-
-// ==========================
+// ============================================================
 // REALTIME
-// ==========================
+// ============================================================
 
-const handleDealUpdated = (event) => {
-  console.log("🔥 REALTIME - DEAL ATUALIZADO");
-  console.log("Evento:", event);
-
-  // Pede ao Dashboard para recarregar
-  // os negócios vindos do banco.
+const handleDealUpdated = () => {
   emit("updated");
 };
 
+// ============================================================
+// ECHO CHANNEL
+// ============================================================
+
+let dealsChannel = null;
+
 onMounted(() => {
-  console.log("🔥 DealsKanban montado");
-
-  if (window.Echo) {
-    console.log("🔥 Conectando ao canal realtime: deals");
-
-    window.Echo
-      .channel("deals")
-      .listen(".deal.updated", handleDealUpdated);
-  } else {
-    console.warn("⚠️ window.Echo não está disponível");
+  if (!window.Echo) {
+    return;
   }
+
+  dealsChannel =
+    window.Echo
+      .channel("deals");
+
+  dealsChannel.listen(
+    ".deal.updated",
+    handleDealUpdated
+  );
 });
 
 onBeforeUnmount(() => {
-  console.log("🧹 Desmontando DealsKanban");
-
-  if (window.Echo) {
-    window.Echo
-      .channel("deals")
-      .stopListening(".deal.updated", handleDealUpdated);
+  if (!dealsChannel) {
+    return;
   }
+
+  dealsChannel.stopListening(
+    ".deal.updated",
+    handleDealUpdated
+  );
+
+  dealsChannel = null;
 });
 </script>
 
 <template>
   <div class="kanban">
 
-    <!-- ==========================
-         OPEN
-    =========================== -->
+    <div
+      v-for="column in kanbanColumns"
+      :key="column.status"
+      class="column"
+    >
+      <div class="column-header">
+        <h3>
+          {{ column.icon }}
+          {{ column.title }}
+        </h3>
 
-    <div class="column">
-
-      <h3 style="color: orange;">
-        🟡 Abertos
-      </h3>
+        <span class="column-count">
+          {{
+            columns[
+              column.status
+            ].length
+          }}
+        </span>
+      </div>
 
       <draggable
-        :list="columns.open"
+        :list="
+          columns[
+            column.status
+          ]
+        "
         group="deals"
         item-key="id"
-        @change="(event) => onChange(event, 'open')"
+        class="drop-zone"
+        @change="
+          event =>
+            onChange(
+              event,
+              column.status
+            )
+        "
       >
-        <template #item="{ element }">
+        <template
+          #item="{ element }"
+        >
+          <div
+            class="card"
+            :class="
+              column.className
+            "
+          >
+            <div class="card-header">
+              <h4>
+                {{
+                  element.title
+                  || "Sem título"
+                }}
+              </h4>
 
-          <div class="card">
+              <span
+                v-if="
+                  updatingDealId
+                  === element.id
+                "
+                class="saving"
+              >
+                Salvando...
+              </span>
+            </div>
 
-            <h4>
-              {{ element.title }}
-            </h4>
-
-            <p>
-              💰 R$ {{ element.value }}
+            <p class="value">
+              💰
+              {{
+                formatCurrency(
+                  element.value
+                )
+              }}
             </p>
 
             <small>
-              {{ element.client?.name }}
+              👤
+              {{
+                element.client?.name
+                ?? "Sem cliente"
+              }}
             </small>
-
           </div>
-
         </template>
       </draggable>
 
-    </div>
-
-
-    <!-- ==========================
-         WON
-    =========================== -->
-
-    <div class="column">
-
-      <h3 style="color: green;">
-        🟢 Ganhos
-      </h3>
-
-      <draggable
-        :list="columns.won"
-        group="deals"
-        item-key="id"
-        @change="(event) => onChange(event, 'won')"
+      <div
+        v-if="
+          !columns[
+            column.status
+          ].length
+        "
+        class="empty-column"
       >
-        <template #item="{ element }">
-
-          <div class="card success">
-
-            <h4>
-              {{ element.title }}
-            </h4>
-
-            <p>
-              💰 R$ {{ element.value }}
-            </p>
-
-            <small>
-              {{ element.client?.name }}
-            </small>
-
-          </div>
-
-        </template>
-      </draggable>
-
-    </div>
-
-
-    <!-- ==========================
-         LOST
-    =========================== -->
-
-    <div class="column">
-
-      <h3 style="color: red;">
-        🔴 Perdidos
-      </h3>
-
-      <draggable
-        :list="columns.lost"
-        group="deals"
-        item-key="id"
-        @change="(event) => onChange(event, 'lost')"
-      >
-        <template #item="{ element }">
-
-          <div class="card danger">
-
-            <h4>
-              {{ element.title }}
-            </h4>
-
-            <p>
-              💰 R$ {{ element.value }}
-            </p>
-
-            <small>
-              {{ element.client?.name }}
-            </small>
-
-          </div>
-
-        </template>
-      </draggable>
-
+        Nenhum negócio
+      </div>
     </div>
 
   </div>
 </template>
 
 <style scoped>
-
 .kanban {
-  display: flex;
-  gap: 2px;
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(280px, 1fr)
+    );
+
+  gap: 16px;
+
   overflow-x: auto;
-  padding: auto;
+
+  padding: 16px;
+
+  border:
+    1px solid #cbd5e1;
+
   border-radius: 12px;
-  border: 1px solid #2453b1;
-  margin: 12px 0px 12px 0px;
+
+  margin:
+    12px 0;
 }
 
 .column {
-  flex: 1;
   min-width: 280px;
-  background: #cfe3f8;
+
+  background: #f8fafc;
+
+  border:
+    1px solid #e2e8f0;
+
   border-radius: 12px;
+
   padding: 12px;
 }
 
-.column h3 {
-  margin-bottom: 10px;
+.column-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+}
+
+.column-header h3 {
+  margin: 0;
+
   font-size: 1rem;
+
+  color: #334155;
+}
+
+.column-count {
+  min-width: 28px;
+
+  padding:
+    4px 8px;
+
+  border-radius: 999px;
+
+  background: #e2e8f0;
+
+  color: #475569;
+
+  text-align: center;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.drop-zone {
+  min-height: 60px;
 }
 
 .card {
-  background: white;
+  background: #ffffff;
+
   padding: 12px;
+
   border-radius: 10px;
+
   margin-bottom: 10px;
+
   cursor: grab;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  border-left:
+    4px solid #f59e0b;
+
+  box-shadow:
+    0 2px 6px
+    rgba(0, 0, 0, 0.05);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.card:hover {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 4px 10px
+    rgba(0, 0, 0, 0.08);
 }
 
 .card:active {
   cursor: grabbing;
 }
 
-.success {
-  border-left: 4px solid #10b981;
+.card.open {
+  border-left-color:
+    #f59e0b;
 }
 
-.danger {
-  border-left: 4px solid #ef4444;
+.card.success {
+  border-left-color:
+    #10b981;
 }
 
-h4 {
-  margin: 0;
+.card.danger {
+  border-left-color:
+    #ef4444;
+}
+
+.card-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+.card h4 {
+  margin:
+    0 0 6px;
+
   font-size: 1rem;
+
   color: #1e3a8a;
-  background: #f1f5f9;
-  padding: 4px 8px;
-  border-radius: 6px;
-  margin-bottom: 4px;
 }
 
-p {
-  margin: 0;
+.saving {
+  font-size: 11px;
+
+  color: #64748b;
+
+  white-space: nowrap;
+}
+
+.value {
+  margin:
+    0 0 4px;
+
   font-size: 0.9rem;
+
   color: #374151;
+
+  font-weight: 600;
 }
 
-small {
+.card small {
   color: #6b7280;
+
   font-size: 0.8rem;
 }
 
+.empty-column {
+  padding:
+    14px 8px;
+
+  text-align: center;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+}
+
+@media (max-width: 1000px) {
+  .kanban {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(260px, 1fr)
+      );
+  }
+}
 </style>

@@ -226,5 +226,5 @@ class HubspotDealController extends Controller
             ], 500);
         }
     }
-    
+
 }

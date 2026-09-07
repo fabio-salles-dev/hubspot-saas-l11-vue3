@@ -50,9 +50,7 @@ let statusChart = null
 
 let echoChannel = null
 
-const platformName = ref(
-  'DevNest HubSpot Account'
-)
+const platformName = 'DevNest HubSpot Account'
 
 // ============================================================
 // ANIMAÇÃO DOS NÚMEROS
@@ -68,11 +66,10 @@ const animateNumber = (targetRef, value) => {
 
   let start = 0
 
-  const step =
-    Math.max(
-      Math.ceil(numericValue / 30),
-      1
-    )
+  const step = Math.max(
+    Math.ceil(numericValue / 30),
+    1
+  )
 
   const interval = setInterval(() => {
     start += step
@@ -117,41 +114,22 @@ const formatDate = (value) => {
 
   const date = new Date(value)
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value
   }
 
-  return date.toLocaleDateString(
-    'pt-BR'
-  )
+  return date.toLocaleDateString('pt-BR')
 }
 
 const getStageName = (stage) => {
   const stages = {
-    appointmentscheduled:
-      'Agendamento',
-
-    qualifiedtobuy:
-      'Qualificado',
-
-    presentationscheduled:
-      'Apresentação',
-
-    decisionmakerboughtin:
-      'Decisor envolvido',
-
-    contractsent:
-      'Contrato enviado',
-
-    closedwon:
-      'Ganho',
-
-    closedlost:
-      'Perdido'
+    appointmentscheduled: 'Agendamento',
+    qualifiedtobuy: 'Qualificado',
+    presentationscheduled: 'Apresentação',
+    decisionmakerboughtin: 'Decisor envolvido',
+    contractsent: 'Contrato enviado',
+    closedwon: 'Ganho',
+    closedlost: 'Perdido'
   }
 
   return (
@@ -180,9 +158,7 @@ const importContacts = async () => {
 
   try {
     const { data } =
-      await api.post(
-        '/hubspot/import'
-      )
+      await api.post('/hubspot/import')
 
     alert(
       `✅ ${
@@ -410,8 +386,7 @@ const loadDealSummary = async () => {
         '/hubspot/deals/summary'
       )
 
-    dealSummary.value =
-      data
+    dealSummary.value = data
 
   } catch (err) {
     console.error(
@@ -443,19 +418,9 @@ const refreshDashboard = async () => {
       loadHistory()
     ])
 
-    /*
-     * O Vue recebeu os novos dados.
-     */
+    await nextTick()
     await nextTick()
 
-    /*
-     * Garantimos mais um ciclo de renderização.
-     */
-    await nextTick()
-
-    /*
-     * Agora renderizamos.
-     */
     await renderAllCharts()
 
   } catch (err) {
@@ -479,26 +444,17 @@ const refreshDashboard = async () => {
 const renderMetricsChart = async () => {
   await nextTick()
 
-console.log('Dados:', {
-  contacts: overview.value.objects?.contacts,
-  companies: overview.value.objects?.companies,
-  deals: overview.value.objects?.deals
-})
-
   const canvas =
     metricsCanvas.value
 
   if (!canvas) {
     console.warn(
-      '⚠️ Canvas de métricas não disponível'
+      'Canvas de métricas não disponível'
     )
     return
   }
 
   if (!overview.value) {
-    console.warn(
-      '⚠️ Overview ainda não disponível'
-    )
     return
   }
 
@@ -519,29 +475,6 @@ console.log('Dados:', {
       overview.value.objects?.deals
     ) || 0
 
-  console.log(
-    '🔥 CRIANDO GRÁFICO DE MÉTRICAS'
-  )
-
-  console.log(
-    'Dados:',
-    {
-      contacts,
-      companies,
-      deals
-    }
-  )
-
-  console.log(
-    'Canvas:',
-    canvas
-  )
-
-
-  console.log(
-  '🔎 OVERVIEW COMPLETO:',
-  JSON.parse(JSON.stringify(overview.value))
-)
   metricsChart =
     new Chart(
       canvas,
@@ -624,10 +557,6 @@ console.log('Dados:', {
         }
       }
     )
-
-  console.log(
-    '✅ Gráfico de métricas renderizado'
-  )
 }
 
 // ============================================================
@@ -637,16 +566,12 @@ console.log('Dados:', {
 const renderHistoryChart = async () => {
   await nextTick()
 
-  console.log(
-    '📈 renderHistoryChart()'
-  )
-
   const canvas =
     historyCanvas.value
 
   if (!canvas) {
     console.warn(
-      '⚠️ Canvas de histórico não disponível'
+      'Canvas de histórico não disponível'
     )
     return
   }
@@ -659,9 +584,6 @@ const renderHistoryChart = async () => {
     ) ||
     !history.value.length
   ) {
-    console.warn(
-      '⚠️ Histórico vazio'
-    )
     return
   }
 
@@ -852,10 +774,6 @@ const renderHistoryChart = async () => {
         }
       }
     )
-
-  console.log(
-    '✅ Gráfico de histórico renderizado'
-  )
 }
 
 // ============================================================
@@ -870,7 +788,7 @@ const renderStagesChart = async () => {
 
   if (!canvas) {
     console.warn(
-      '⚠️ Canvas de etapas não disponível'
+      'Canvas de etapas não disponível'
     )
     return
   }
@@ -889,9 +807,6 @@ const renderStagesChart = async () => {
     Object.keys(byStage)
 
   if (!stages.length) {
-    console.warn(
-      '⚠️ Nenhuma etapa encontrada'
-    )
     return
   }
 
@@ -969,10 +884,6 @@ const renderStagesChart = async () => {
         }
       }
     )
-
-  console.log(
-    '✅ Gráfico de etapas renderizado'
-  )
 }
 
 // ============================================================
@@ -987,7 +898,7 @@ const renderStatusChart = async () => {
 
   if (!canvas) {
     console.warn(
-      '⚠️ Canvas de status não disponível'
+      'Canvas de status não disponível'
     )
     return
   }
@@ -1095,10 +1006,6 @@ const renderStatusChart = async () => {
         }
       }
     )
-
-  console.log(
-    '✅ Gráfico de status renderizado'
-  )
 }
 
 // ============================================================
@@ -1106,63 +1013,12 @@ const renderStatusChart = async () => {
 // ============================================================
 
 const renderAllCharts = async () => {
-  console.log(
-    '================================'
-  )
-
-  console.log(
-  '🔎 DEAL SUMMARY COMPLETO:',
-  JSON.parse(JSON.stringify(dealSummary.value))
-)
-  console.log(
-    '📊 INICIANDO GRÁFICOS'
-  )
-
-  console.log(
-    'metricsCanvas:',
-    metricsCanvas.value
-  )
-
-  console.log(
-    'historyCanvas:',
-    historyCanvas.value
-  )
-
-  console.log(
-    'stagesCanvas:',
-    stagesCanvas.value
-  )
-
-  console.log(
-    'statusCanvas:',
-    statusCanvas.value
-  )
-
-  console.log(
-    'overview:',
-    overview.value
-  )
-
-  console.log(
-    'dealSummary:',
-    dealSummary.value
-  )
-
-  console.log(
-    'history:',
-    history.value
-  )
-
-  console.log(
-    '================================'
-  )
-
   await nextTick()
 
-  renderMetricsChart()
-  renderHistoryChart()
-  renderStagesChart()
-  renderStatusChart()
+  await renderMetricsChart()
+  await renderHistoryChart()
+  await renderStagesChart()
+  await renderStatusChart()
 }
 
 // ============================================================
@@ -1174,7 +1030,7 @@ watch(
   async () => {
     if (!loading.value) {
       await nextTick()
-      renderMetricsChart()
+      await renderMetricsChart()
     }
   },
   {
@@ -1191,7 +1047,7 @@ watch(
   async () => {
     if (!loading.value) {
       await nextTick()
-      renderHistoryChart()
+      await renderHistoryChart()
     }
   },
   {
@@ -1209,8 +1065,8 @@ watch(
     if (!loading.value) {
       await nextTick()
 
-      renderStagesChart()
-      renderStatusChart()
+      await renderStagesChart()
+      await renderStatusChart()
     }
   },
   {
@@ -1223,16 +1079,6 @@ watch(
 // ============================================================
 
 onMounted(async () => {
-  console.log(
-    '🚀 HubSpot Dashboard iniciado'
-  )
-
-  console.log(
-    'REVERB KEY:',
-    import.meta.env
-      .VITE_REVERB_APP_KEY
-  )
-
   try {
     const { data } =
       await api.get(
@@ -1248,36 +1094,16 @@ onMounted(async () => {
       data?.account ?? null
 
     if (connected.value) {
-      // ======================================================
-      // CARREGAR DADOS
-      // ======================================================
-
       await Promise.all([
         loadOverview(),
         loadHistory(),
         loadDealSummary()
       ])
 
-      // ======================================================
-      // IMPORTANTE
-      //
-      // Primeiro retiramos o loading.
-      // Isso permite ao Vue criar os canvas.
-      // ======================================================
-
       loading.value = false
 
-      // ======================================================
-      // AGUARDAR DOM
-      // ======================================================
-
       await nextTick()
-
       await nextTick()
-
-      // ======================================================
-      // CRIAR GRÁFICOS
-      // ======================================================
 
       await renderAllCharts()
 
@@ -1298,7 +1124,7 @@ onMounted(async () => {
   }
 
   // ==========================================================
-  // ECHO
+  // ECHO / REVERB
   // ==========================================================
 
   try {
@@ -1312,30 +1138,13 @@ onMounted(async () => {
           .private('user.1')
           .listen(
             '.test.event',
-            async (event) => {
-              console.log(
-                '🔥 Evento recebido:',
-                event
-              )
-
+            async () => {
               await refreshDashboard()
             }
           )
-
-      console.log(
-        '✅ Echo configurado'
-      )
     }
 
   } catch (err) {
-    /*
-     * IMPORTANTE:
-     *
-     * Se o Reverb não estiver rodando,
-     * isso NÃO deve impedir o Dashboard
-     * de funcionar.
-     */
-
     console.warn(
       '⚠️ Echo/Reverb não disponível:',
       err
@@ -1348,10 +1157,6 @@ onMounted(async () => {
 // ============================================================
 
 onBeforeUnmount(() => {
-  console.log(
-    '🧹 Desmontando HubSpot Dashboard'
-  )
-
   destroyCharts()
 
   try {
@@ -1391,7 +1196,7 @@ onBeforeUnmount(() => {
         />
 
         <h1>
-          Integração HubSpot
+          Integração HubSpotssss
         </h1>
 
         <p>
@@ -1541,34 +1346,6 @@ onBeforeUnmount(() => {
 
               </p>
 
-              <p>
-
-                <strong>
-                  Região:
-                </strong>
-
-                {{
-                  overview?.region
-                  ?? account?.region
-                  ?? '—'
-                }}
-
-              </p>
-
-              <p>
-
-                <strong>
-                  Timezone:
-                </strong>
-
-                {{
-                  overview?.timezone
-                  ?? account?.timezone
-                  ?? '—'
-                }}
-
-              </p>
-
             </div>
 
           </div>
@@ -1635,34 +1412,7 @@ onBeforeUnmount(() => {
 
             </div>
 
-            <div class="metric-card deals">
-
-              <span class="metric-icon">
-                💼
-              </span>
-
-              <div>
-
-                <strong>
-                  {{
-                    formatNumber(
-                      animatedDeals
-                    )
-                  }}
-                </strong>
-
-                <small>
-                  Negócios
-                </small>
-
-              </div>
-
-            </div>
-
-            <div
-              v-if="dealSummary"
-              class="metric-card money"
-            >
+            <div class="metric-card money">
 
               <span class="metric-icon">
                 💰
@@ -1672,9 +1422,11 @@ onBeforeUnmount(() => {
 
                 <strong>
                   {{
-                    formatCurrency(
-                      dealSummary.total_amount
-                    )
+                    dealSummary
+                      ? formatCurrency(
+                          dealSummary.total_amount
+                        )
+                      : formatCurrency(0)
                   }}
                 </strong>
 
@@ -1833,9 +1585,7 @@ onBeforeUnmount(() => {
                 Valor ganho
               </span>
 
-              <strong
-                class="text-success"
-              >
+              <strong class="text-success">
                 {{
                   formatCurrency(
                     dealSummary.won_amount
@@ -1851,9 +1601,7 @@ onBeforeUnmount(() => {
                 Valor perdido
               </span>
 
-              <strong
-                class="text-danger"
-              >
+              <strong class="text-danger">
                 {{
                   formatCurrency(
                     dealSummary.lost_amount
@@ -1869,9 +1617,7 @@ onBeforeUnmount(() => {
                 Valor em aberto
               </span>
 
-              <strong
-                class="text-primary"
-              >
+              <strong class="text-primary">
                 {{
                   formatCurrency(
                     dealSummary.open_amount
@@ -2494,7 +2240,7 @@ onBeforeUnmount(() => {
   display: grid;
 
   grid-template-columns:
-    repeat(4, 1fr);
+    repeat(3, 1fr);
 
   gap: 16px;
 }
@@ -2526,12 +2272,6 @@ onBeforeUnmount(() => {
   background: #ecfdf5;
 
   border-color: #d1fae5;
-}
-
-.metric-card.deals {
-  background: #fffbeb;
-
-  border-color: #fef3c7;
 }
 
 .metric-card.money {

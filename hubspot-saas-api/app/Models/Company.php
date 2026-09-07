@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Client;
-use App\Models\Deal;
 
 class Company extends Model
 {
     protected $fillable = [
         'name',
-        'hubspot_id'
+        'hubspot_id',
+        'workspace_id',
     ];
 
     public function clients()
@@ -22,5 +21,9 @@ class Company extends Model
     {
         return $this->hasMany(Deal::class);
     }
-}
 
+    public function workspace()
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+}

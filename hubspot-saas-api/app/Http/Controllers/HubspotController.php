@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\HubspotSnapshot;
 use App\Services\HubspotService;
+use App\Services\HubspotSnapshotService;
 use Illuminate\Http\Request;
 
 class HubspotController extends Controller
 {
     public function __construct(
-        private HubspotService $hubspot
+        private HubspotService $hubspot,
+        private HubspotSnapshotService $snapshotService
     ) {}
 
     /**
@@ -131,9 +133,9 @@ class HubspotController extends Controller
      */
     public function overview()
     {
-        $snapshot = HubspotSnapshot::latest(
-            'snapshot_date'
-        )->first();
+        $snapshot = HubspotSnapshot::query()
+            ->orderByDesc('snapshot_date')
+            ->first();
 
         if (!$snapshot) {
             return response()->json([
@@ -178,7 +180,9 @@ class HubspotController extends Controller
      * ============================================================
      * LIVE OVERVIEW
      *
-     * Busca os dados diretamente no HubSpot.
+     * Busca os dados diretamente no HubSpot
+     * e salva um snapshot diário.
+     *
      * ============================================================
      */
     public function liveOverview()
@@ -193,6 +197,9 @@ class HubspotController extends Controller
 
         try {
 
+            /*
+             * Busca os dados diretamente do HubSpot.
+             */
             $overview =
                 $this->hubspot->getAccountOverview();
 
@@ -204,6 +211,31 @@ class HubspotController extends Controller
                 ], 500);
             }
 
+            /*
+             * ====================================================
+             * SALVAR SNAPSHOT
+             * ====================================================
+             *
+             * O HubspotSnapshotService utiliza:
+             *
+             * portal_id + data
+             *
+             * como chave.
+             *
+             * Portanto:
+             *
+             * - primeira chamada do dia = cria
+             * - demais chamadas no mesmo dia = atualiza
+             * - amanhã = cria novo registro
+             *
+             * Isso evita duplicar snapshots durante o dia.
+             */
+            $this->snapshotService
+                ->createFromOverview($overview);
+
+            /*
+             * Retorna os dados atuais normalmente.
+             */
             return response()->json([
                 'success' => true,
                 ...$overview,
@@ -215,6 +247,71 @@ class HubspotController extends Controller
                 'success' => false,
                 'message' =>
                     'Erro ao buscar overview do HubSpot',
+                'error' =>
+                    $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ============================================================
+     * HISTÓRICO
+     *
+     * Retorna os snapshots dos últimos 30 dias.
+     * ============================================================
+     */
+    public function history()
+    {
+        if (!$this->hubspot->hasValidToken()) {
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'HubSpot não conectado'
+            ], 401);
+        }
+
+        try {
+
+            /*
+             * Busca as informações da conta para descobrir
+             * o portal_id atualmente conectado.
+             */
+            $account =
+                $this->hubspot->getAccountInfo();
+
+            $portalId =
+                $account['portal_id']
+                ?? $account['portalId']
+                ?? null;
+
+            if (!$portalId) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'Portal ID do HubSpot não encontrado'
+                ], 500);
+            }
+
+            /*
+             * Busca os snapshots dos últimos 30 dias.
+             */
+            $history =
+                $this->snapshotService
+                    ->getHistory(
+                        (int) $portalId,
+                        30
+                    );
+
+            return response()->json(
+                $history
+            );
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Erro ao carregar histórico do HubSpot',
                 'error' =>
                     $e->getMessage(),
             ], 500);
@@ -384,3 +481,4 @@ class HubspotController extends Controller
         }
     }
 }
+

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import HubspotView from "../views/HubspotView.vue";
+//import HubspotView from "../views/HubspotView.vue";
 import Dashboard from "../pages/Dashboard.vue";
 import Deals from "../pages/Deals.vue";
 

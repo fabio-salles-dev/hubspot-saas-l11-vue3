@@ -7,6 +7,16 @@ defineProps({
     required: true
   }
 })
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL"
+    }
+  ).format(Number(value) || 0);
+};
 </script>
 
 <template>
@@ -17,9 +27,9 @@ defineProps({
         <DealStatusBadge :status="deal.status" />
       </div>
 
-      <p class="value">
-        💰 R$ {{ Number(deal.value).toLocaleString('pt-BR') }}
-      </p>
+     <p class="value">
+  💰 {{ formatCurrency(deal.value) }}
+    </p>
 
       <p class="client">
         👤 {{ deal.client?.name ?? 'Sem cliente' }}
@@ -33,6 +43,7 @@ defineProps({
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
+  color: #1e3a8a;
 }
 
 .deal-card {
@@ -60,9 +71,5 @@ defineProps({
 .client {
   font-size: 14px;
   color: #475569;
-}
-
-.deals-cards {
-  color: #1e3a8a;
 }
 </style>

@@ -15,6 +15,7 @@ class Deal extends Model
         'status',
         'client_id',
         'company_id',
+        'workspace_id',
     ];
 
     public function client()
@@ -26,5 +27,9 @@ class Deal extends Model
     {
         return $this->belongsTo(Company::class);
     }
-}
 
+    public function workspace()
+    {
+        return $this->belongsTo(Workspace::class);
+    }
+}
